@@ -4118,6 +4118,12 @@ void checkUpdate() {
       Timer(const Duration(seconds: 1), () async {
         bind.mainGetSoftwareUpdateUrl();
       });
+      if (isDesktop &&
+          bind.mainGetCommonSync(key: 'private-update-enabled') == 'true') {
+        Timer.periodic(const Duration(hours: 6), (_) {
+          bind.mainGetSoftwareUpdateUrl();
+        });
+      }
     }
   }
 }

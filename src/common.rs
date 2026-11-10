@@ -1176,7 +1176,7 @@ fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
 // Private builds are updated through the owner's build repository.
 pub fn do_check_software_update() -> hbb_common::ResultType<()> {
     clear_software_update_url();
-    Ok(())
+    crate::private_update::check()
 }
 
 #[inline]

@@ -600,7 +600,8 @@ class _GeneralState extends State<_General> {
           kOptionEnableCheckUpdate,
           isServer: false,
         ),
-      if (showAutoUpdate)
+      if (showAutoUpdate &&
+          bind.mainGetCommonSync(key: 'private-update-enabled') != 'true')
         _OptionCheckBox(
           context,
           'Auto update',

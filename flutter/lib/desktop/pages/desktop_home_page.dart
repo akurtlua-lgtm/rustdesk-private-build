@@ -6,6 +6,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/private_update_url.dart';
 import 'package:flutter_hbb/common/widgets/animated_rotation_widget.dart';
 import 'package:flutter_hbb/common/widgets/custom_password.dart';
 import 'package:flutter_hbb/consts.dart';
@@ -428,6 +429,17 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   Widget buildHelpCards(String updateUrl) {
+    final privateVersion = privateReleaseVersion(updateUrl);
+    if (privateVersion != null && !isCardClosed) {
+      return buildInstallCard(
+          'Status',
+          '${translate("new-version-of-{${bind.mainGetAppNameSync()}}-tip")} ($privateVersion).',
+          'Download', () async {
+        if (!await launchUrl(Uri.parse(updateUrl), mode: LaunchMode.externalApplication)) {
+          showToast(translate('Failed'));
+        }
+      }, closeButton: true, help: 'Changelog', link: updateUrl);
+    }
     if (!bind.isCustomClient() &&
         updateUrl.isNotEmpty &&
         !isCardClosed &&
