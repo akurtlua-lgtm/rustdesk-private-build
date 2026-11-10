@@ -23,6 +23,7 @@ import '../../models/platform_model.dart';
 import '../../common/shared_state.dart';
 import './popup_menu.dart';
 import './kb_layout_type_chooser.dart';
+import './mac_space_shortcut.dart';
 import 'package:flutter_hbb/utils/scale.dart';
 import 'package:flutter_hbb/common/widgets/custom_scale_base.dart';
 
@@ -842,6 +843,27 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       state: widget.state,
       setFullscreen: _setFullscreen,
     ));
+    if (widget.ffi.connType == ConnType.defaultConn) {
+      for (final right in [false, true]) {
+        toolbarItems.add(Consumer<FfiModel>(builder: (context, model, child) {
+          if (model.pi.platform != kPeerPlatformMacOS) {
+            return const Offstage();
+          }
+          final enabled = model.keyboard && !model.viewOnly;
+          return _IconMenuButton(
+            tooltip: right
+                ? 'Next desktop / full-screen app'
+                : 'Previous desktop / full-screen app',
+            icon: Icon(right ? Icons.chevron_right : Icons.chevron_left,
+                color: enabled ? Colors.white : Colors.white38,
+                size: _ToolbarTheme.buttonSize),
+            color: _ToolbarTheme.blueColor,
+            hoverColor: _ToolbarTheme.hoverBlueColor,
+            onPressed: enabled ? () => _switchMacSpace(right) : null,
+          );
+        }));
+      }
+    }
     // Do not show keyboard for camera connection type.
     if (widget.ffi.connType == ConnType.defaultConn) {
       toolbarItems.add(_KeyboardMenu(id: widget.id, ffi: widget.ffi));
@@ -900,6 +922,29 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       direction: outerAxis,
       mainAxisSize: MainAxisSize.min,
       children: children,
+    );
+  }
+
+  Future<void> _switchMacSpace(bool right) async {
+    final ffi = widget.ffi;
+    final model = ffi.ffiModel;
+    if (ffi.connType != ConnType.defaultConn ||
+        model.pi.platform != kPeerPlatformMacOS ||
+        !model.keyboard ||
+        model.viewOnly) return;
+    await sendMacSpaceShortcut(
+      right: right,
+      swapCtrlCmd: bind.sessionGetToggleOptionSync(
+          sessionId: ffi.sessionId, arg: 'allow_swap_key'),
+      sendKey: (name, press, ctrl, command) => bind.sessionInputKey(
+          sessionId: ffi.sessionId,
+          name: name,
+          down: false,
+          press: press,
+          alt: false,
+          ctrl: ctrl,
+          shift: false,
+          command: command),
     );
   }
 
