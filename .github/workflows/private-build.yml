@@ -709,6 +709,17 @@ jobs:
           # Opt-in, and its macOS tests run nowhere else.
           cargo test --locked --release -p clipboard --features unix-file-copy-paste
 
+      - name: Ad-hoc sign and smoke test macOS app
+        if: env.UPLOAD_ARTIFACT == 'true'
+        run: |
+          # Ad-hoc signatures have no Team ID for hardened-runtime library validation.
+          cp ./flutter/macos/Runner/Release.entitlements "$RUNNER_TEMP/rustdesk-adhoc.entitlements"
+          /usr/libexec/PlistBuddy -c 'Add :com.apple.security.cs.disable-library-validation bool true' "$RUNNER_TEMP/rustdesk-adhoc.entitlements"
+          bash ./.github/scripts/sign-macos-app.sh \
+            ./flutter/build/macos/Build/Products/Release/RustDesk.app - \
+            "$RUNNER_TEMP/rustdesk-adhoc.entitlements"
+          test "$(./flutter/build/macos/Build/Products/Release/RustDesk.app/Contents/MacOS/RustDesk --version)" = "$VERSION"
+
       - name: create unsigned dmg
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
