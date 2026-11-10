@@ -22,14 +22,18 @@ def check_versions(root, expected, tag):
     cargo = re.search(r'^version = "([^"]+)"$', (root / 'Cargo.toml').read_text(), re.M)
     lock = re.search(r'\[\[package\]\]\nname = "rustdesk"\nversion = "([^"]+)"',
                      (root / 'Cargo.lock').read_text())
+    packer = re.search(r'^version = "([^"]+)"$',
+                       (root / 'libs/portable/Cargo.toml').read_text(), re.M)
+    packer_lock = re.search(r'\[\[package\]\]\nname = "rustdesk-portable-packer"\nversion = "([^"]+)"',
+                            (root / 'Cargo.lock').read_text())
     flutter = re.search(r'^version: ([^+\s]+)\+([0-9]+)$',
                         (root / 'flutter/pubspec.yaml').read_text(), re.M)
     rpms = [re.search(r'^Version:\s*(\S+)\s*$', (root / name).read_text(), re.M)
             for name in ['res/rpm-flutter.spec', 'res/rpm-flutter-suse.spec']]
-    if not cargo or not lock or not flutter or not all(rpms) or not 0 < int(flutter[2]) <= 65535:
+    if not cargo or not lock or not packer or not packer_lock or not flutter or not all(rpms) or not 0 < int(flutter[2]) <= 65535:
         raise ValueError('Missing program version or Flutter build number')
-    if any(value != expected for value in [cargo[1], lock[1], flutter[1], *[rpm[1] for rpm in rpms]]):
-        raise ValueError('Cargo, lockfile, Flutter, RPM, and build VERSION must match')
+    if any(value != expected for value in [cargo[1], lock[1], packer[1], packer_lock[1], flutter[1], *[rpm[1] for rpm in rpms]]):
+        raise ValueError('Cargo, portable packer, lockfile, Flutter, RPM, and build VERSION must match')
 
 
 def check_new_version(expected, remote_tags):

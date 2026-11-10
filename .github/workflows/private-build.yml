@@ -34,7 +34,7 @@ env:
   FLUTTER_MACOS_ARM_VERSION: "3.44.9"
   # for arm64 linux because official Dart SDK does not work
   FLUTTER_ELINUX_VERSION: "3.16.9"
-  TAG_NAME: "v1.5.4"
+  TAG_NAME: "v1.5.5"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   # vcpkg version: 2026.07.29
   # If we change the `VCPKG COMMIT_ID`, please remember:
@@ -45,7 +45,7 @@ env:
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
   VCPKG_CMAKE_VERSION: "4.3.0"
   ARMV7_VCPKG_COMMIT_ID: "6f29f12e82a8293156836ad81cc9bf5af41fe836" # 2025.01.13, got "/opt/artifacts/vcpkg/vcpkg: No such file or directory" with latest version
-  VERSION: "1.5.4"
+  VERSION: "1.5.5"
   NDK_VERSION: "r28c"
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
@@ -349,7 +349,7 @@ jobs:
           BASE_URL=${{ env.SIGN_BASE_URL }} SECRET_KEY=${{ secrets.SIGN_SECRET_KEY }} python3 res/job.py sign_files ./rustdesk/
 
       - name: Verify Windows Flutter version
-        if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true'
+        if: env.UPLOAD_ARTIFACT == 'true'
         shell: powershell
         run: |
           $reportedVersion = (& ".\rustdesk\rustdesk.exe" --version | Out-String).Trim()
@@ -426,6 +426,41 @@ jobs:
           $msi = Get-ChildItem ./Package/bin/*/Release/en-us/Package.msi | Select-Object -First 1
           mv $msi.FullName ../../SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.msi
           sha256sum ../../SignOutput/rustdesk-*.msi
+
+      - name: Verify Windows installer versions
+        if: env.UPLOAD_ARTIFACT == 'true'
+        shell: powershell
+        run: |
+          $pattern = '^' + [regex]::Escape($env:VERSION) + '(\.[0-9]+)?$'
+          $exe = Get-Item ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.exe
+          foreach ($value in @($exe.VersionInfo.ProductVersion, $exe.VersionInfo.FileVersion)) {
+            if ($value.Trim() -notmatch $pattern) {
+              throw "Portable EXE version does not match $env:VERSION"
+            }
+          }
+          $msi = Get-Item ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.msi
+          $installer = New-Object -ComObject WindowsInstaller.Installer
+          $db = $installer.GetType().InvokeMember('OpenDatabase', 'InvokeMethod', $null, $installer, @($msi.FullName, 0))
+          $sql = 'SELECT `Value` FROM `Property` WHERE `Property` = ''ProductVersion'''
+          $view = $db.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $db, @($sql))
+          $null = $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null)
+          $row = $view.GetType().InvokeMember('Fetch', 'InvokeMethod', $null, $view, $null)
+          $productVersion = $row.GetType().InvokeMember('StringData', 'GetProperty', $null, $row, @(1))
+          if ($productVersion -notmatch $pattern) {
+            throw "MSI product version does not match $env:VERSION"
+          }
+          $null = $view.GetType().InvokeMember('Close', 'InvokeMethod', $null, $view, $null)
+
+      - name: Preserve private Windows installers
+        if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL == '-2'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rustdesk-installers-windows-${{ matrix.job.arch }}
+          path: |
+            ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.exe
+            ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.msi
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Build pre-built MSI template
         # Two things this works around: preprocess.py rewrites res/msi in place, so the
@@ -1104,6 +1139,17 @@ jobs:
             for name in rustdesk*??.rpm; do
                 mv "$name" /workspace/"${name%%.rpm}-suse.rpm"
             done
+
+      - name: Preserve Linux installers
+        if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL == '-2'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rustdesk-installers-linux-${{ matrix.job.arch }}
+          path: |
+            rustdesk-${{ env.VERSION }}-*.deb
+            rustdesk-${{ env.VERSION }}-*.rpm
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Publish debian/rpm package
         if: env.UPLOAD_ARTIFACT == 'true' && github.ref == 'refs/heads/main'

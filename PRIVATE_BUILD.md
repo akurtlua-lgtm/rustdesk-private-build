@@ -35,11 +35,11 @@ Windows 选择 x86_64 的 MSI 或 EXE；macOS 根据处理器选择 x86_64 或 a
 
 ## 版本与正式发布
 
-从 `1.5.4+72` 开始统一版本。第一次须手动安装支持新版提示的客户端；旧 `1.5.3` 无法收到此提示。
+首个正式统一版本使用 `1.5.5+73`，`1.5.4` 保留为未完成候选。第一次须手动安装支持新版提示的 1.5.5 客户端；旧 `1.5.3` 无法收到此提示。
 
-发布前同时更新 `Cargo.toml`、`Cargo.lock` 中的 rustdesk 条目、`flutter/pubspec.yaml`（递增构建号）、两个 `res/rpm-flutter*.spec`，以及 `.github/workflows/private-build.yml` 中的 `VERSION`、`TAG_NAME=v版本号`。补丁依次使用 `1.5.4`、`1.5.5` 等，不复用已发布版本。
+发布前同时更新 `Cargo.toml`、`libs/portable/Cargo.toml`、`Cargo.lock` 中的 rustdesk 和 rustdesk-portable-packer 条目、`flutter/pubspec.yaml`（递增构建号）、两个 `res/rpm-flutter*.spec`，以及 `.github/workflows/private-build.yml` 中的 `VERSION`、`TAG_NAME=v版本号`。补丁依次使用 `1.5.5`、`1.5.6` 等，不复用已发布版本。
 
-预检会拒绝版本不一致、重复发布和降级。手动触发构建后，各平台先上传预发布包；只有 Windows、Mac 两种架构、Linux 全部成功且七个包的 SHA-256 均核对通过，流程才生成 `SHA256SUMS` 并将版本转为正式版。客户端只提示正式版，忽略草稿、预发布、相同或旧版本及其他仓库链接。
+预检会拒绝版本不一致、重复发布和降级，Windows 构建还会检查主程序、EXE 属性及 MSI 内部 ProductVersion。手动触发构建后，各平台先上传预发布包；只有 Windows、Mac 两种架构、Linux 全部成功且七个包的 SHA-256 均核对通过，流程才生成 `SHA256SUMS` 并将版本转为正式版。客户端只提示正式版，忽略草稿、预发布、相同或旧版本及其他仓库链接。
 
 更新检查不带账号凭据或设备 ID。它需要访问 GitHub；无法访问时继续使用当前版本。
 

@@ -54,10 +54,12 @@ class PrivateReleaseTests(unittest.TestCase):
             root = Path(directory)
             (root / 'flutter').mkdir()
             (root / 'res').mkdir()
+            (root / 'libs/portable').mkdir(parents=True)
+            (root / 'libs/portable/Cargo.toml').write_text('version = "1.5.4"\n')
             for name in ['rpm-flutter.spec', 'rpm-flutter-suse.spec']:
                 (root / 'res' / name).write_text('Version:    1.5.4\n')
             (root / 'Cargo.toml').write_text('[package]\nversion = "1.5.4"\n')
-            (root / 'Cargo.lock').write_text('[[package]]\nname = "rustdesk"\nversion = "1.5.4"\n')
+            (root / 'Cargo.lock').write_text('[[package]]\nname = "rustdesk"\nversion = "1.5.4"\n[[package]]\nname = "rustdesk-portable-packer"\nversion = "1.5.4"\n')
             (root / 'flutter/pubspec.yaml').write_text('version: 1.5.4+72\n')
             check_versions(root, '1.5.4', 'v1.5.4')
             (root / 'flutter/pubspec.yaml').write_text('version: 1.5.3+71\n')
@@ -65,6 +67,10 @@ class PrivateReleaseTests(unittest.TestCase):
                 check_versions(root, '1.5.4', 'v1.5.4')
             (root / 'flutter/pubspec.yaml').write_text('version: 1.5.4+72\n')
             (root / 'res/rpm-flutter.spec').write_text('Version:    1.5.3\n')
+            with self.assertRaises(ValueError):
+                check_versions(root, '1.5.4', 'v1.5.4')
+            (root / 'res/rpm-flutter.spec').write_text('Version:    1.5.4\n')
+            (root / 'libs/portable/Cargo.toml').write_text('version = "1.5.3"\n')
             with self.assertRaises(ValueError):
                 check_versions(root, '1.5.4', 'v1.5.4')
 
