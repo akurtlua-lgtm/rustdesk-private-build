@@ -13,6 +13,15 @@ pub use http_client::{
     create_http_client_with_url, create_http_client_with_url_strict, get_url_for_tls,
 };
 
+pub(crate) fn signalling_token(token: &str) -> &str {
+    // OSS console sessions authenticate only the HTTPS API, not hbbs/hbbr.
+    if token.starts_with("rdoss_v1_") {
+        ""
+    } else {
+        token
+    }
+}
+
 #[derive(Debug)]
 pub enum HbbHttpResponse<T> {
     ErrorFormat,
@@ -35,6 +44,23 @@ impl<T: DeserializeOwned> HbbHttpResponse<T> {
                 Ok(v) => Ok(Self::Data(v)),
                 Err(_) => Ok(Self::DataTypeFormat),
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod signalling_token_tests {
+    use super::signalling_token;
+
+    #[test]
+    fn console_session_is_not_sent_to_rendezvous_or_relay() {
+        assert_eq!(signalling_token("rdoss_v1_console-session"), "");
+    }
+
+    #[test]
+    fn existing_server_tokens_are_preserved() {
+        for token in ["", "pro-session-token", "rdoss_v2_unknown"] {
+            assert_eq!(signalling_token(token), token);
         }
     }
 }
