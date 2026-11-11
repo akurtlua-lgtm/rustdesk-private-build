@@ -2,10 +2,12 @@
   "upstream_repository": "rustdesk/rustdesk",
   "upstream_branch": "master",
   "integrated_commit": "0bfe22083df9c6319d917849ab72c1efb3920d7e",
-  "last_seen_commit": "0bfe22083df9c6319d917849ab72c1efb3920d7e",
+  "last_seen_commit": "2fe026917dbdc0f715a8ce299da5eaf4e016587e",
   "last_seen_stable_tag": "1.5.3",
   "last_seen_stable_published_at": "2026-11-09T09:43:52Z",
   "policy": "UPSTREAM_SYNC.md",
   "checked_at": "2026-11-11",
-  "pending_commits": []
+  "pending_commits": [
+    "2fe026917dbdc0f715a8ce299da5eaf4e016587e"
+  ]
 }
