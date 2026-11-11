@@ -3,7 +3,7 @@
 上游：https://github.com/rustdesk/rustdesk ，跟踪 master 的新提交和正式发布。
 目标：https://github.com/akurtlua-lgtm/rustdesk-private-build 。
 
-源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef；建立订阅时，master 与基线相同，最新正式版为 1.5.1（2026-11-02，UTC+8）。自建客户端版本独立递增；本项目的 1.5.5 为自建版本，不能因官方版本号较小而覆盖或降级。
+源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 0bfe22083df9c6319d917849ab72c1efb3920d7e；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.6，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
 
 ## 必须保留的行为
 
@@ -27,3 +27,9 @@
 遇到冲突、无法确认权限/隐私/协议兼容或测试失败时，保留当前正式版；在隔离分支中准备可审查的差异或草稿 PR，记录原因，需要用户处理时再提出。不得为完成自动同步绕过测试、签名、权限或版本门槛。不能把“已检查”当成“已集成”；只同步部分提交时需逐条记录，不能把整段上游范围标为已集成。
 
 本订阅仅监控和更新客户端仓库。不会借此自动更换生产服务器、账号后台、密钥或防火墙设置。Android/iOS/Web 的新构建与自动安装不在当前授权的桌面发布范围内。
+
+## 最近一次已完成同步
+
+2026-11-11 已完整集成上述初始基线之后的两个提交：Mac 网卡枚举启动崩溃修复，以及仅接收模式退出按钮文案支持。候选构建 [43016680770](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43016680770) 全部平台通过、发布步骤按门禁跳过后，才合入 main；正式构建 [43025954097](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43025954097) 九个任务全部成功，完整七包及 SHA256SUMS 校验后正式发布 [v1.5.6](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.6)。发布标签指向经验证的源码 a87e1ca8a10cdd2604b28bf2e3da7723c799a85c；本次发布成功后才推进已集成基线。
+
+原有账号信令过滤、设备端授权与密钥／加密代码、Mac 切换与签名、手动更新及隐私配置逻辑保持原样。生产服务端和独立账号后台没有随此同步部署。未逐端实测新版真实远控、LAN/WOL 或自定义文案界面；Mac 包仍未经 Apple 公证。
