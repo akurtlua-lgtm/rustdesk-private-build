@@ -873,6 +873,10 @@ jobs:
 
       - name: Maximize build space
         run: |
+          # The runner's Azure mirror can fail DNS before project compilation starts.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt
+          fi
           sudo rm -rf /opt/ghc
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /usr/share/dotnet
