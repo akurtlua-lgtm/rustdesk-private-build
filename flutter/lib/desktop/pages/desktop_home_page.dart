@@ -570,6 +570,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       }
     }
     if (bind.isIncomingOnly()) {
+      final quitButtonText =
+          bind.mainGetBuildinOption(key: kOptionQuitButtonText).trim();
       return Align(
         alignment: Alignment.centerRight,
         child: OutlinedButton(
@@ -580,7 +582,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               exit(0);
             }
           },
-          child: Text(translate('Quit')),
+          child: Text(quitButtonText.isEmpty ? translate('Quit') : quitButtonText),
         ),
       ).marginAll(14);
     }
