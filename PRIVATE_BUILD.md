@@ -1,7 +1,7 @@
 # 自建 RustDesk 客户端
 
 本仓库按拥有者授权公开，用于构建 Windows x64、macOS Intel/Apple Silicon、Linux x64 桌面客户端。
-上游源码固定于 rustdesk/rustdesk 的 `95cca3f661f635b3cc85c04935fe8d96d8f432ef`，保留原有许可证。
+初始上游源码基线为 rustdesk/rustdesk 的 `95cca3f661f635b3cc85c04935fe8d96d8f432ef`，保留原有许可证；后续已集成增量见 `.github/upstream-baseline.json`。
 
 ## 安装包
 
@@ -35,7 +35,7 @@ Windows 选择 x86_64 的 MSI 或 EXE；macOS 根据处理器选择 x86_64 或 a
 
 ## 版本与正式发布
 
-当前正式版为 `1.5.6+74`，已同步两项兼容的上游增量并通过候选与正式两轮全平台构建。已安装 1.5.5 可通过新版提示自行升级；更旧版本可直接手动安装 1.5.6。详见 [v1.5.6](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.6)。
+当前正式版为 `1.5.7+75`，已同步一项兼容的上游构建修复并通过候选与正式两轮全平台构建。已安装 1.5.5 或 1.5.6 可通过新版提示自行升级；更旧版本可直接手动安装 1.5.7。M 系列 Mac 请选择 aarch64 DMG。详见 [v1.5.7](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.7)。
 
 首个正式统一版本使用 `1.5.5+73`，`1.5.4` 保留为未完成候选。第一次须手动安装支持新版提示的 1.5.5 客户端；旧 `1.5.3` 无法收到此提示。
 
