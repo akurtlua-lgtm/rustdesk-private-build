@@ -58,10 +58,6 @@ jobs:
 
       - name: Install prerequisites
         run: |
-          # The runner's Azure mirror can fail DNS before project compilation starts.
-          if [ -f /etc/apt/apt-mirrors.txt ]; then
-            sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt
-          fi
           sudo apt-get install ca-certificates -y
           sudo apt-get update -y
           sudo apt-get install -y \
