@@ -3,7 +3,7 @@
 上游：https://github.com/rustdesk/rustdesk ，跟踪 master 的新提交和正式发布。
 目标：https://github.com/akurtlua-lgtm/rustdesk-private-build 。
 
-源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 2fe026917dbdc0f715a8ce299da5eaf4e016587e；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.7，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
+源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.8，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
 
 ## 必须保留的行为
 
@@ -32,8 +32,8 @@
 
 ## 最近一次已完成同步
 
-2026-11-12（UTC+8）已完整集成 0bfe22083df9c6319d917849ab72c1efb3920d7e..2fe026917dbdc0f715a8ce299da5eaf4e016587e 的一个提交：将原有 mfx-dispatch 编译补丁内置，补丁 SHA-512 与旧固定下载校验值完全相同，依赖源码版本不变。无子模块变化，原生运行代码保持原样。
+2026-11-12 完整集成 2fe026917dbdc0f715a8ce299da5eaf4e016587e..d46c7c52521a311d3ada8eeacd4f13b94e321258 四个提交的净增量：Mac Intel/ARM 构建机改用 macOS26。三次 SIGN_BASE_URL 中间改动最终相互抵消，自建签名配置保持原样；无原生源码、依赖源码或子模块变化。Mac 架构、最低部署目标、固定工具链与签名/加载辅助保持原样。
 
-[候选构建 43104855866](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43104855866) 八个任务全部成功、发布任务及四个原生 Release 上传步骤按分支门禁跳过后，同一源码 f7409444e1ce7d9321df9a3701e9d1ccfedd0d35 才快进到 main。[主分支构建 43113285549](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43113285549) 九个任务全部成功，完整七包及 SHA256SUMS 校验后正式发布 [v1.5.7](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.7)。发布标签固定在经验证源码，本次发布成功后才推进已集成基线。
+[候选构建 43171025340](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43171025340) 八个任务全部成功，最终及四个原生 Release 上传步骤按分支门禁跳过后，同一源码 97809311d652f94212e94f4ba1c21e8478f1022c 才通过 [PR #2](https://github.com/akurtlua-lgtm/rustdesk-private-build/pull/2) 快进到 main。[正式构建 43180141016](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43180141016) 九个任务全部成功，在完整七包和 SHA256SUMS 校验后发布 [v1.5.8](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.8)。已核验两种 Mac 的实际 macOS26 构建镜像、版本/签名/加载、账号过滤/更新/Mac 界面回归，以及两轮实际日志隐私。发布成功后才推进已集成基线，标签仍指向经验证源码。
 
-账号信令过滤、新版选择、Mac 界面与签名/加载回归，以及两轮实际日志隐私检查通过。现有严格 Key、设备端授权与加密、Mac 空间切换、手动更新及配置隐私代码保持原样。生产服务端和独立账号后台未随此次同步部署。未逐端实测新版真实远控、LAN/WOL 或 GUI 安装；Mac 包仍未经 Apple 公证。
+严格 Key、设备端授权与加密、独立账号边界、Mac 空间切换和键盘限制、配置隐私、关闭官方上报及手动更新代码保持原样。没有部署生产服务器或账号后台。未逐端实测真实远控、旧 macOS 物理设备、LAN/WOL 或 GUI 安装；最低部署配置保持不变不等于逐机实测兼容，Mac 包仍未经 Apple 公证。

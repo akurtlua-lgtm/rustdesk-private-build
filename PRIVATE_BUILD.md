@@ -35,7 +35,7 @@ Windows 选择 x86_64 的 MSI 或 EXE；macOS 根据处理器选择 x86_64 或 a
 
 ## 版本与正式发布
 
-当前正式版为 `1.5.7+75`，已同步一项兼容的上游构建修复并通过候选与正式两轮全平台构建。已安装 1.5.5 或 1.5.6 可通过新版提示自行升级；更旧版本可直接手动安装 1.5.7。M 系列 Mac 请选择 aarch64 DMG。详见 [v1.5.7](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.7)。
+当前正式版为 `1.5.8+76`，已同步 macOS26 构建环境迁移并通过候选与正式两轮全平台构建。已安装 1.5.5/1.5.6/1.5.7 可通过新版提示自行升级；更旧版本可直接手动安装 1.5.8。M 系列 Mac 请选择 aarch64 DMG。详见 [v1.5.8](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.8)。
 
 首个正式统一版本使用 `1.5.5+73`，`1.5.4` 保留为未完成候选。第一次须手动安装支持新版提示的 1.5.5 客户端；旧 `1.5.3` 无法收到此提示。
 
