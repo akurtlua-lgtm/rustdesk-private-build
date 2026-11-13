@@ -19,7 +19,7 @@ class PrivateReleaseTests(unittest.TestCase):
         names = [f'rustdesk-{version}-{suffix}' for suffix in [
             'x86_64.exe', 'x86_64.msi', 'aarch64.dmg', 'x86_64.dmg',
             'x86_64.deb', '0.x86_64.rpm', '0.x86_64-suse.rpm']]
-        for mode in ['complete', 'missing', 'tampered', 'wrong-commit']:
+        for mode in ['complete', 'missing', 'tampered', 'wrong-commit', 'signing-failure']:
             with self.subTest(mode=mode):
                 assets = [{'name': name, 'size': 2,
                            'digest': 'sha256:' + hashlib.sha256(b'ok').hexdigest()} for name in names]
@@ -41,7 +41,10 @@ class PrivateReleaseTests(unittest.TestCase):
 
                 with patch.dict(os.environ, VERSION=version, TAG_NAME=tag,
                                 GITHUB_REPOSITORY='owner/repo', GITHUB_SHA='commit'), \
-                        patch('finalize_private_release.gh', side_effect=fake_gh):
+                        patch('finalize_private_release.gh', side_effect=fake_gh), \
+                        patch('finalize_private_release.prepare_private_update', create=True,
+                              side_effect=ValueError('signing failed') if mode == 'signing-failure' else None,
+                              return_value=[]):
                     if mode == 'complete':
                         finalize()
                     else:

@@ -206,3 +206,33 @@ fn verifies_metadata_generated_by_python_release_script_fixture() {
 
 #[path = "update_metadata/offline_tests.rs"]
 mod offline_tests;
+
+#[test]
+fn private_metadata_selects_our_signed_native_artifact() {
+    let query = UpdateArtifactQuery { platform: "macos", arch: "aarch64", format: "dmg" };
+    let artifact = verify_private_update_metadata(
+        include_bytes!("update_metadata/fixtures/private-release.json"),
+        include_bytes!("update_metadata/fixtures/private-release.json.sig"),
+        "1.5.8", query,
+    ).expect("our independently signed release");
+    assert_eq!(artifact.url, "https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/download/v1.5.8/rustdesk-1.5.8-aarch64.dmg");
+    assert_eq!(artifact.size, 30939236);
+}
+
+#[test]
+fn private_metadata_refuses_tampering_wrong_release_arch_and_signed_foreign_urls() {
+    let metadata = include_bytes!("update_metadata/fixtures/private-release.json");
+    let signature = include_bytes!("update_metadata/fixtures/private-release.json.sig");
+    let query = UpdateArtifactQuery { platform: "macos", arch: "aarch64", format: "dmg" };
+    let mut tampered = metadata.to_vec();
+    tampered.push(b' ');
+    assert!(verify_private_update_metadata(&tampered, signature, "1.5.8", query).is_err());
+    assert!(verify_private_update_metadata(metadata, signature, "1.5.9", query).is_err());
+    assert!(verify_private_update_metadata(metadata, signature, "1.5.8",
+        UpdateArtifactQuery { arch: "x86_64", ..query }).is_err());
+    assert!(verify_private_update_metadata(
+        include_bytes!("update_metadata/fixtures/private-foreign-release.json"),
+        include_bytes!("update_metadata/fixtures/private-foreign-release.json.sig"),
+        "1.5.8", query,
+    ).is_err());
+}
