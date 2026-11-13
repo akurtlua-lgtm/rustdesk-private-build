@@ -37,3 +37,11 @@
 [候选构建 43171025340](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43171025340) 八个任务全部成功，最终及四个原生 Release 上传步骤按分支门禁跳过后，同一源码 97809311d652f94212e94f4ba1c21e8478f1022c 才通过 [PR #2](https://github.com/akurtlua-lgtm/rustdesk-private-build/pull/2) 快进到 main。[正式构建 43180141016](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43180141016) 九个任务全部成功，在完整七包和 SHA256SUMS 校验后发布 [v1.5.8](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.8)。已核验两种 Mac 的实际 macOS26 构建镜像、版本/签名/加载、账号过滤/更新/Mac 界面回归，以及两轮实际日志隐私。发布成功后才推进已集成基线，标签仍指向经验证源码。
 
 严格 Key、设备端授权与加密、独立账号边界、Mac 空间切换和键盘限制、配置隐私、关闭官方上报及手动更新代码保持原样。没有部署生产服务器或账号后台。未逐端实测真实远控、旧 macOS 物理设备、LAN/WOL 或 GUI 安装；最低部署配置保持不变不等于逐机实测兼容，Mac 包仍未经 Apple 公证。
+
+## 待验证同步：1.5.9（构建77）
+
+候选范围为 d46c7c52521a311d3ada8eeacd4f13b94e321258..3ccb4c4b5b5a8422276dd5f6f211b42e05ec9534，共五个提交，无子模块变化。精确应用 Windows 盘符排序及其回归、Windows 剪贴板文件大小声明/错误拒绝/首个非空文件审计索引、Linux 最大化窗口恢复及其回归；保留本仓库剪贴板授权和文件清单隔离实现。文件审计仍使用已有配置的 API 和原有授权检查，触发时机由最后一个文件提前到首个非空文件，不新增审计接收域名。
+
+上游工作流只映射现有可选 Mac 证书导入的 keychain-password 参数，以及 Linux 完整 Flutter 测试；自建候选和正式发布均执行 Linux 测试，不采用上游跳过发布测试的条件。保留本仓库的签名加载辅助、Secrets 与仅 main 可发布门禁。Android 的日志 JNI 导出及 Kotlin 声明按同一上游提交配对同步并保留 JNI 开发规则；不恢复 Android 工作流，不新增 Android/iOS/Web 构建或宣称其经过构建验证。
+
+当前正式版仍为 1.5.8。候选通过全部桌面 CI 与必要回归后才允许合入 main，完整七包正式发布成功后才推进已集成基线；尚未验证的范围只记录为 pending。不以本次源码审查代替实际跨机剪贴板复制、GUI/旧系统实测，Mac 包仍未经 Apple 公证。
