@@ -104,6 +104,9 @@ pub(super) fn verified_update_artifact_from_release_page_url(
     update_url: &str,
     query: &UpdateArtifactQuery<'_>,
 ) -> ResultType<VerifiedUpdateArtifact> {
+    if crate::private_update::enabled() {
+        return crate::private_update::verified_artifact(update_url, *query);
+    }
     let release_id = release_id_from_update_url(update_url)?;
     let display_version = display_version_from_release_id(&release_id)?;
     let expected_artifact_url_prefix =
@@ -177,8 +180,10 @@ pub fn get_update_download_file_from_url(url: &str) -> Option<PathBuf> {
     let tag = segments.next()?;
     let filename = segments.next()?;
 
-    if owner != "rustdesk"
-        || repo != "rustdesk"
+    let allowed_repo = (owner == "rustdesk" && repo == "rustdesk")
+        || (crate::private_update::enabled()
+            && owner == "akurtlua-lgtm" && repo == "rustdesk-private-build");
+    if !allowed_repo
         || releases != "releases"
         || download != "download"
         || tag.is_empty()

@@ -11,6 +11,8 @@ use serde_derive::Deserialize;
 use std::sync::OnceLock;
 
 mod artifact;
+mod private;
+pub(crate) use private::verify_private_update_metadata;
 
 #[cfg(target_os = "macos")]
 mod offline;

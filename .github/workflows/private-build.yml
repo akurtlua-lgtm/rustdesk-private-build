@@ -34,7 +34,7 @@ env:
   FLUTTER_MACOS_ARM_VERSION: "3.44.9"
   # for arm64 linux because official Dart SDK does not work
   FLUTTER_ELINUX_VERSION: "3.16.9"
-  TAG_NAME: "v1.5.8"
+  TAG_NAME: "v1.5.10"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   # vcpkg version: 2026.07.29
   # If we change the `VCPKG COMMIT_ID`, please remember:
@@ -45,7 +45,7 @@ env:
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
   VCPKG_CMAKE_VERSION: "4.3.0"
   ARMV7_VCPKG_COMMIT_ID: "6f29f12e82a8293156836ad81cc9bf5af41fe836" # 2025.01.13, got "/opt/artifacts/vcpkg/vcpkg: No such file or directory" with latest version
-  VERSION: "1.5.8"
+  VERSION: "1.5.10"
   NDK_VERSION: "r28c"
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
@@ -59,6 +59,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Install pinned update signing dependencies
+        run: python3 -m pip install --require-hashes -r res/update/update_metadata_requirements.txt
       - name: Test release version and publication checks
         run: python3 -m unittest discover -s .github/scripts -p 'test_private_release.py' -v
       - name: Refuse inconsistent or previously published versions
@@ -1176,7 +1181,14 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Install pinned update signing dependencies
+        run: python3 -m pip install --require-hashes -r res/update/update_metadata_requirements.txt
       - name: Verify all installers and publish the complete version
         env:
           GH_TOKEN: ${{ github.token }}
+          RUSTDESK_UPDATE_ED25519_SEED: ${{ secrets.RUSTDESK_UPDATE_ED25519_SEED }}
+          RUSTDESK_UPDATE_ED25519_PUBLIC_KEY: ${{ secrets.RUSTDESK_UPDATE_ED25519_PUBLIC_KEY }}
         run: python3 .github/scripts/finalize_private_release.py

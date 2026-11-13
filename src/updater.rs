@@ -2,6 +2,8 @@ mod artifact;
 mod download;
 
 use crate::common::do_check_software_update;
+#[cfg(target_os = "windows")]
+use crate::private_update::query_windows_install_idle as query_no_active_conns_ipc;
 use artifact::verified_update_artifact_from_release_page_url;
 pub(crate) use artifact::{current_update_arch, current_update_format, current_update_platform};
 pub use artifact::{
@@ -391,7 +393,7 @@ fn update_new_version(update_msi: bool, version: &str, file_path: &PathBuf, expe
 /// all GUI users, including the login-window server at UID 0. Falls back to
 /// false (assumes sessions active) on any IPC error to avoid updating during
 /// an unknown session state.
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub fn has_no_active_conns_ipc() -> bool {
     let result = match hbb_common::tokio::runtime::Runtime::new() {
         Ok(rt) => rt.block_on(query_no_active_conns_ipc()),

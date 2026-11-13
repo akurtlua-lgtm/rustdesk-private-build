@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 
 from private_release import check_versions
+from private_update_metadata import prepare_private_update, SIDECARS
 
 
 def gh(*args):
@@ -28,7 +29,7 @@ def finalize():
         'x86_64.exe', 'x86_64.msi', 'aarch64.dmg', 'x86_64.dmg', 'x86_64.deb',
         '0.x86_64.rpm', '0.x86_64-suse.rpm',
     ]}
-    if {a['name'] for a in release['assets']} - {'SHA256SUMS'} != expected:
+    if {a['name'] for a in release['assets']} - {'SHA256SUMS'} - SIDECARS != expected:
         raise ValueError('All seven desktop installers are required before publication')
     with tempfile.TemporaryDirectory() as directory:
         gh('release', 'download', tag, '--repo', repo, '--dir', directory, '--pattern', 'rustdesk-*')
@@ -43,7 +44,10 @@ def finalize():
             lines.append(digest + '  ' + asset['name'] + '\n')
         manifest = Path(directory) / 'SHA256SUMS'
         manifest.write_text(''.join(lines))
+        sidecars = prepare_private_update(root, Path(directory), version, tag, repo)
         gh('release', 'upload', tag, str(manifest), '--repo', repo, '--clobber')
+        for sidecar in sidecars:
+            gh('release', 'upload', tag, str(sidecar), '--repo', repo, '--clobber')
     gh('release', 'edit', tag, '--repo', repo, '--prerelease=false', '--latest',
        '--title', 'RustDesk ' + version)
     print('Published all seven verified desktop installers:', tag)

@@ -84,6 +84,52 @@ pub(crate) fn check() -> ResultType<()> {
     Ok(())
 }
 
+pub(crate) fn verified_artifact(
+    release_url: &str,
+    query: crate::update_metadata::UpdateArtifactQuery<'_>,
+) -> ResultType<crate::update_metadata::VerifiedUpdateArtifact> {
+    let latest = release_version(release_url)
+        .ok_or_else(|| hbb_common::anyhow::anyhow!("Invalid private release URL"))?;
+    if version(latest) <= version(crate::VERSION) {
+        bail!("Private update must be newer than the installed version");
+    }
+    let prefix = format!("https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/download/v{latest}/rustdesk-update.json");
+    let metadata = fetch_sidecar(&prefix)?;
+    let signature = fetch_sidecar(&format!("{prefix}.sig"))?;
+    crate::update_metadata::verify_private_update_metadata(&metadata, &signature, latest, query)
+}
+
+fn fetch_sidecar(url: &str) -> ResultType<Vec<u8>> {
+    let response = crate::hbbs_http::create_http_client_with_url_strict(url)?
+        .get(url).timeout(Duration::from_secs(30)).send()?.error_for_status()?;
+    let mut bytes = Vec::new();
+    response.take(1_048_577).read_to_end(&mut bytes)?;
+    if bytes.len() > 1_048_576 {
+        bail!("Private update metadata is too large");
+    }
+    Ok(bytes)
+}
+
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+pub(crate) fn ensure_idle_for_install() -> ResultType<()> {
+    let idle = std::thread::spawn(crate::updater::has_no_active_conns_ipc)
+        .join().map_err(|_| hbb_common::anyhow::anyhow!("Failed to check active sessions"))?;
+    if !idle {
+        bail!("Close active remote sessions before installing the update");
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+pub(crate) async fn query_windows_install_idle() -> ResultType<bool> {
+    let mut connection = crate::ipc::connect(1000, "").await?;
+    connection.send(&crate::ipc::Data::HasNoActiveConns(None)).await?;
+    match connection.next_timeout(1000).await? {
+        Some(crate::ipc::Data::HasNoActiveConns(Some(idle))) => Ok(idle),
+        _ => bail!("Could not verify the running service's active sessions"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

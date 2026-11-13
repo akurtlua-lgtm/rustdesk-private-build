@@ -52,6 +52,45 @@ class PrivateReleaseTests(unittest.TestCase):
                             finalize()
                 self.assertEqual(any(call[:2] == ('release', 'edit') for call in calls), mode == 'complete')
 
+    def test_private_manifest_is_signed_and_verified_for_all_seven_formats(self):
+        import base64
+        import shutil
+        import subprocess
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        from private_update_metadata import prepare_private_update
+        project = Path(__file__).resolve().parents[2]
+        key = Ed25519PrivateKey.generate()
+        public = key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+        seed = key.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
+                                 serialization.NoEncryption())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'src/update_metadata').mkdir(parents=True)
+            shutil.copytree(project / 'res/update', root / 'res/update')
+            (root / 'src/update_metadata/private.rs').write_text(
+                'TrustedUpdateKey { key_id: "2026-ed25519-main", public_key: ['
+                + ','.join(map(str, public)) + '] }')
+            for suffix in ['x86_64.exe', 'x86_64.msi', 'aarch64.dmg', 'x86_64.dmg',
+                           'x86_64.deb', '0.x86_64.rpm', '0.x86_64-suse.rpm']:
+                (root / f'rustdesk-1.5.10-{suffix}').write_bytes(b'checked installer')
+            with patch.dict(os.environ,
+                            RUSTDESK_UPDATE_ED25519_SEED=base64.b64encode(seed).decode(),
+                            RUSTDESK_UPDATE_ED25519_PUBLIC_KEY=base64.b64encode(public).decode()):
+                paths = prepare_private_update(root, root, '1.5.10', 'v1.5.10',
+                                               'akurtlua-lgtm/rustdesk-private-build')
+                metadata = json.loads(paths[0].read_text())
+                self.assertEqual(len(metadata['artifacts']), 7)
+                self.assertEqual(len({(a['platform'], a['arch'], a['format'])
+                                      for a in metadata['artifacts']}), 7)
+                self.assertTrue(all(a['url'].startswith(
+                    'https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/download/v1.5.10/')
+                                    for a in metadata['artifacts']))
+                os.environ['RUSTDESK_UPDATE_ED25519_PUBLIC_KEY'] = base64.b64encode(bytes(32)).decode()
+                with self.assertRaises(subprocess.CalledProcessError):
+                    prepare_private_update(root, root, '1.5.10', 'v1.5.10',
+                                           'akurtlua-lgtm/rustdesk-private-build')
+
     def test_versions_and_build_number_must_match(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

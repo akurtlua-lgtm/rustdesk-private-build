@@ -434,8 +434,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       return buildInstallCard(
           'Status',
           '${translate("new-version-of-{${bind.mainGetAppNameSync()}}-tip")} ($privateVersion).',
-          'Download', () async {
-        if (!await launchUrl(Uri.parse(updateUrl), mode: LaunchMode.externalApplication)) {
+          (isWindows || isMacOS) && bind.mainIsInstalled() ? 'Update' : 'Download', () async {
+        if ((isWindows || isMacOS) && bind.mainIsInstalled()) {
+          handleUpdate(updateUrl);
+        } else if (!await launchUrl(Uri.parse(updateUrl), mode: LaunchMode.externalApplication)) {
           showToast(translate('Failed'));
         }
       }, closeButton: true, help: 'Changelog', link: updateUrl);
@@ -897,6 +899,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
+      if (isMacOS) setState(() {});
       shouldBeBlocked(_block, canBeBlocked);
     }
   }

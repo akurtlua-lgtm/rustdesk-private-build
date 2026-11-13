@@ -2950,6 +2950,12 @@ pub fn main_set_common(_key: String, _value: String) {
                 serde_json::ser::to_string(&data).unwrap_or("".to_owned()),
             );
         } else if _key == "update-me" {
+            if crate::private_update::enabled() {
+                if let Err(error) = crate::private_update::ensure_idle_for_install() {
+                    push_update_me_error(error.to_string());
+                    return;
+                }
+            }
             let artifact = match crate::updater::verified_update_artifact_for_download_url(&_value)
             {
                 Ok(artifact) => artifact,

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/private_update_url.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -266,7 +267,7 @@ class UpdateProgressState extends State<UpdateProgress> {
     final downloadUrl = widget.downloadUrl;
     msgBox(
       gFFI.sessionId,
-      'custom-nocancel',
+      privateReleaseVersion(releasePageUrl) != null ? 'custom' : 'custom-nocancel',
       '{$appName} Update',
       '{$appName}-to-update-tip',
       '',
@@ -284,7 +285,7 @@ class UpdateProgressState extends State<UpdateProgress> {
           _showUpdateError(releasePageUrl, error.toString());
         }
       },
-      submitTimeout: 5,
+      submitTimeout: privateReleaseVersion(releasePageUrl) != null ? null : 5,
     );
   }
 
