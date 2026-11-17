@@ -2,16 +2,45 @@
   "upstream_repository": "rustdesk/rustdesk",
   "upstream_branch": "master",
   "integrated_commit": "d46c7c52521a311d3ada8eeacd4f13b94e321258",
-  "last_seen_commit": "3ccb4c4b5b5a8422276dd5f6f211b42e05ec9534",
+  "last_seen_commit": "a98450a995fc0ecc7245494d4e1d1e592bf1f203",
   "last_seen_stable_tag": "1.5.3",
   "last_seen_stable_published_at": "2026-11-09T09:43:52Z",
   "policy": "UPSTREAM_SYNC.md",
-  "checked_at": "2026-11-13",
+  "checked_at": "2026-11-17",
   "pending_commits": [
     "bec9853f0d91524cd03a5ed6a7ce98b8f6f63c21",
     "66992ab7378af5052fde486c00cbde6aaa613160",
     "e8677cb72369bb779bd8f1901b9147e16db4abfc",
     "1ac53ccb1b28e62b726db3cbd6042110349c9c2a",
-    "3ccb4c4b5b5a8422276dd5f6f211b42e05ec9534"
+    "3ccb4c4b5b5a8422276dd5f6f211b42e05ec9534",
+    "b84058e07639006598f5fb624dad9dcd7b8cf96d",
+    "225ff5721eae5cca77f04afdf765c2bf8f85d7f2",
+    "a7468d0df356bc7eedf9cec22dd97384306880c7",
+    "53a1e8aea411c1cb887ca17d9172af1a440ff7ff",
+    "987669e1219052c11531b14ed1ac42d60df0b3a5",
+    "6837cb96eb08e1051b6000495903cc4b6b29c50f",
+    "d785d7ba2c4af744abc2056bcb044174c9e3d442",
+    "e7bacd03584f84c350641b8914de70955217f4ed",
+    "9cb48e959c8418ae322fef0399eb013c6fb3d193",
+    "d4df77e2fd42d0b7afc3ddb78aceae539033ee37",
+    "a89a82f911d9e1bfe742e79ccb2aeaaa3c950d20",
+    "fc9713c1b8ed78e780f7b1d35c63e80a05c5bdd9",
+    "febee50a6e25630e471f2d3f5044044edde4db31",
+    "fcb485bb9033a1e31869ae8e84574a1bf58b8c03",
+    "506e111460f49f3a7bd92097f200c5b8de7b26a1",
+    "7949eca16c15b3eb86d89a9d4f5ac223026dd215",
+    "5b937c3a68c202f93f2e1172a7644d8ecd652c80",
+    "bca767fcdb8a0b76938b7aeb4ab2782062c53237",
+    "a98450a995fc0ecc7245494d4e1d1e592bf1f203"
+  ],
+  "partially_integrated_commits": [
+    {
+      "commit": "3e953e886a874956d8351d6c25e340ea82dd2343",
+      "scope": "Windows registry recovery target validation and two native regressions only",
+      "release": "v1.5.11",
+      "source_commit": "f3c8347a8258144113b78c3eb525ecb5db79329c",
+      "formal_run": 44011533732,
+      "verified_at": "2026-11-17"
+    }
   ]
 }

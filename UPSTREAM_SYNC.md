@@ -3,7 +3,7 @@
 上游：https://github.com/rustdesk/rustdesk ，跟踪 master 的新提交和正式发布。
 目标：https://github.com/akurtlua-lgtm/rustdesk-private-build 。
 
-源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.10，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
+源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.11，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
 
 ## 必须保留的行为
 
@@ -52,7 +52,7 @@ Mac 首页回前台重新读取真实的录屏/辅助功能/输入监控状态�
 
 正式 CI 重新下载并核对全部七包真实大小及 SHA256，再签名并验证更新元数据后提升最新版。独立读回确认标签仍指向上述已验证源码，七个摘要与 SHA256SUMS、签名元数据及 API 一致，Ed25519 签名通过嵌入公钥验证，实际 Rust 元数据模块可选择全部七包。候选八份及正式九份日志隐私检查通过；Windows/Mac ARM 的账号过滤、更新选择和私有签名回归各两项通过，两种 Mac 的 Dart 测试、签名与加载通过。未实测真实跨版本安装/重启，Mac 临时签名仍可能要求重新授权且未公证。此为自建功能版，不推进已集成 d46 基线。
 
-## 待验证独立安全候选：1.5.11（构建79）
+## 已完成独立安全发布：1.5.11（构建79）
 
 仅回移上游3e953e886a874956d8351d6c25e340ea82dd2343（Windows注册表恢复目标验证，ZDI-CAN-34805）及其两项回归测试。恢复HKLM前只允许既有GraphicsDrivers\Connectivity直属子项的Recent值，force两种路径均验证；合法恢复记录类型、长度和force既有行为保持。
 
@@ -61,3 +61,9 @@ Mac 首页回前台重新读取真实的录屏/辅助功能/输入监控状态�
 候选必须通过现有Windows/macOS/Linux七包构建、实际Windows原生注册表回归、共用账号凭据/Key/更新/Mac功能与日志隐私检查，分支门禁禁止发布；再由同一已验证源码进入main正式构建，核验完整七包、SHA256SUMS和独立签名更新元数据后才能发布。
 
 回归面：src/platform/windows.rs中的reg_display_settings恢复入口，在访问注册表之前增加目标校验；已有调用者及恢复生命周期不变。其他修改仅限一致版本号与本文档。未修改生产服务器、账号后台、Key、防火墙或本机权限。
+
+2026-11-17 发布验证完成：固定源码 f3c8347a8258144113b78c3eb525ecb5db79329c 的[候选43993676574](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/43993676574)八个任务成功，publisher及四个原生上传Release入口按候选门禁跳过；初次Mac Intel仅产物上传DNS故障，单次同源码重试后成功。完整七包归档CRC、来源、大小、SHA256及八份实际日志隐私检查通过，同一源码经[PR #5](https://github.com/akurtlua-lgtm/rustdesk-private-build/pull/5)非强制快进到main。
+
+[正式44011533732](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/44011533732)九个任务全部成功，[v1.5.11](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.11)已成为正式最新版，标签仍指向上述经测源码。最终任务实际重新下载七包并核对SHA256/大小后签名验证并发布；独立读回三个sidecar及七包API摘要/大小，SHA256SUMS、Ed25519元数据签名、仓库身份、版本及七种平台/架构/格式绑定一致。正式九份日志隐私、Windows两项原生registry_recovery测试、Windows/Mac ARM账号过滤及私有签名/更新选择回归、两种Mac Dart及签名加载检查通过。Windows主程序261项/剪贴板2项，Mac ARM主程序261项/剪贴板22项通过。未在本机运行Intel组件，也未实测真实跨版本安装/重启；Mac仍未公证。
+
+只把3e953e8单独记录为部分集成，连续integrated_commit仍为d46c7c52521a311d3ada8eeacd4f13b94e321258。此前二十三个提交和后来观察到的a98450a Linux X11光标修复共二十四个仍待评估，未纳入本版；PR #3空文件风险与剪贴板授权修补仍未发布。后续比较须扣除明确已部分集成的3e953e8，不能重复回移，也不能把整个区间标为已集成。此验证记录另作元数据提交，不重建同一版本、不移动发布标签。
