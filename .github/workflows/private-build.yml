@@ -990,7 +990,7 @@ jobs:
           # The vcpkg FFmpeg archive is built on this host and requires its fcntl64 ABI.
           # Keep native tests separate from the unchanged Ubuntu18 packaging target.
           sudo apt-get install -y build-essential clang libclang-dev pkg-config \
-            libgtk-3-dev libasound2-dev libpulse-dev libgstreamer1.0-dev \
+            libgtk-3-dev libasound2-dev libpulse-dev libunwind-dev libgstreamer1.0-dev \
             libgstreamer-plugins-base1.0-dev libva-dev libdbus-1-dev \
             libxcb-randr0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
             libxfixes-dev libxtst-dev libxkbcommon-dev libssl-dev dbus-x11 xvfb
