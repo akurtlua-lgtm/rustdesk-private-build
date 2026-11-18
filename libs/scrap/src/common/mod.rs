@@ -21,6 +21,8 @@ cfg_if! {
                 pub mod drm_render;
                 pub use self::linux::*;
                 pub use self::wayland::set_map_err;
+                #[cfg(test)]
+                pub(crate) use self::wayland::Display as TestWaylandDisplay;
                 pub use self::x11::PixelBuffer;
             } else {
                 mod x11;

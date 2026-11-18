@@ -67,3 +67,13 @@ Mac 首页回前台重新读取真实的录屏/辅助功能/输入监控状态�
 [正式44011533732](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/44011533732)九个任务全部成功，[v1.5.11](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.11)已成为正式最新版，标签仍指向上述经测源码。最终任务实际重新下载七包并核对SHA256/大小后签名验证并发布；独立读回三个sidecar及七包API摘要/大小，SHA256SUMS、Ed25519元数据签名、仓库身份、版本及七种平台/架构/格式绑定一致。正式九份日志隐私、Windows两项原生registry_recovery测试、Windows/Mac ARM账号过滤及私有签名/更新选择回归、两种Mac Dart及签名加载检查通过。Windows主程序261项/剪贴板2项，Mac ARM主程序261项/剪贴板22项通过。未在本机运行Intel组件，也未实测真实跨版本安装/重启；Mac仍未公证。
 
 只把3e953e8单独记录为部分集成，连续integrated_commit仍为d46c7c52521a311d3ada8eeacd4f13b94e321258。此前二十三个提交和后来观察到的a98450a Linux X11光标修复共二十四个仍待评估，未纳入本版；PR #3空文件风险与剪贴板授权修补仍未发布。后续比较须扣除明确已部分集成的3e953e8，不能重复回移，也不能把整个区间标为已集成。此验证记录另作元数据提交，不重建同一版本、不移动发布标签。
+
+## 待验证独立候选：1.5.12（构建80）
+
+按拥有者明确要求补齐2026-11-18观察的上游原生验证：d1d497f Linux uinput相对移动对称取整、b633360在核心/Flutter/已有Android服务入口提前初始化libsodium、54416dc在实际PipeWire排序中保留不匹配显示原点的流。没有更新子模块或依赖版本，没有纳入PR #3旧剪贴板文件兼容风险或此前剪贴板授权补丁。9854296文档改动仅对已有28份README替换hbb_common链接，FR/RU按实际行适配；不存在的KA文件不引入，文档提交只能记为部分集成。
+
+必要验证新增在实际模块：Linux使用真实PipeWire/DBus/显示类型测试工作区流保留与已匹配显示顺序，uinput的两个原生测试随根crate执行；Linux私有构建启用同一发布特性的根crate和scrap原生测试，并核对确切测试名防止过滤器零匹配。加密回归分别在全新进程走core与Flutter实际入口，中途执行已有签名更新校验，验证Poly1305认证结果不变；Windows/Mac ARM完整原生测试与Mac Intel定向测试执行。libsodium-sys仅作为测试直接依赖，复用现有锁定0.2.7包，无新版本或生产依赖。
+
+回归面：src/server/uinput.rs仅Linux相对移动取整；libs/scrap/src/wayland/pipewire.rs仅未匹配流保留；src/common.rs的global_init与src/flutter_ffi.rs的既有入口只增加上游初始化薄调用。其他改动仅测试、执行测试的私有CI步骤、一致版本、链接及本文档。现有rdoss_v1_过滤、HTTPS账号边界、严格licence_key、设备授权/E2E、MacSpaces及输入限制/权限刷新/签名加载、Secrets注入/关闭指纹、独立签名且下载和安装分别确认的升级机制保持原样；不部署服务器或后台，不更改生产配置和本机权限。
+
+候选测试、完整七包与真实日志隐私通过前不进入main；同一源码的main正式构建九任务与七包/SHA256SUMS/独立签名元数据验证通过前不发布或更新已集成基线。原生单元/集成测试不等于真实KDE桌面、物理uinput或跨版本安装已验收，保留这些实机限制。

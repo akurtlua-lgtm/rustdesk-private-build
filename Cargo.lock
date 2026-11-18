@@ -7061,7 +7061,7 @@ dependencies = [
 
 [[package]]
 name = "rustdesk"
-version = "1.5.11"
+version = "1.5.12"
 dependencies = [
  "android-wakelock",
  "android_logger",
@@ -7111,6 +7111,7 @@ dependencies = [
  "libpulse-binding",
  "libpulse-simple-binding",
  "libsamplerate-sys",
+ "libsodium-sys",
  "libxdo-sys",
  "mac_address",
  "magnum-opus",
@@ -7178,7 +7179,7 @@ dependencies = [
 
 [[package]]
 name = "rustdesk-portable-packer"
-version = "1.5.11"
+version = "1.5.12"
 dependencies = [
  "brotli",
  "dirs 5.0.1",

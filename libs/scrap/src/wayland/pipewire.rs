@@ -1798,6 +1798,19 @@ fn sort_streams(
             }
         }
     }
+    // Keep a stream whose position names no display, e.g. a full-workspace stream at (0, 0) when
+    // no display sits there (#17027). A stream at an origin another stream already took is still
+    // dropped.
+    for (s, d) in streams.drain(..).zip(shared_displays.drain(..)) {
+        if !displays
+            .displays
+            .iter()
+            .any(|wd| (wd.x, wd.y) == s.position)
+        {
+            sorted_streams.push(s);
+            sorted_shared_displays.push(d);
+        }
+    }
     *streams = sorted_streams;
     *shared_displays = sorted_shared_displays;
 }
@@ -1817,6 +1830,61 @@ mod tests {
             refresh_rate: 60,
             transform: 0,
         }
+    }
+
+    #[test]
+    fn unmatched_workspace_stream_is_kept_after_selected_monitors() {
+        use super::{
+            sort_streams, Displays, OwnedFd, PipeWireCapturable, PwStreamInfo, SyncConnection,
+        };
+        use std::{fs::File, os::unix::io::IntoRawFd, sync::Arc};
+
+        let displays = Arc::new(Displays {
+            primary: 0,
+            displays: vec![output(0, 30, (1680, 1050)), output(1680, 0, (1920, 1080))],
+        });
+        let conn = Arc::new(SyncConnection::new_session().expect("test session bus"));
+        let mut streams = vec![(1, (0, 0)), (2, (1680, 0)), (3, (0, 30))]
+            .into_iter()
+            .map(|(path, position)| PwStreamInfo {
+                path,
+                position,
+                source_type: 1,
+                size: (1920, 1080),
+            })
+            .collect::<Vec<_>>();
+        let mut shared = streams
+            .iter()
+            .map(|stream| {
+                let file = File::open("/dev/null").expect("test descriptor");
+                // SAFETY: ownership of this valid descriptor moves into OwnedFd exactly once.
+                let fd = unsafe { OwnedFd::new(file.into_raw_fd()) };
+                crate::Display::WAYLAND(crate::common::TestWaylandDisplay(PipeWireCapturable {
+                    dbus_conn: conn.clone(),
+                    fd,
+                    path: stream.path,
+                    source_type: stream.source_type,
+                    primary: false,
+                    position: stream.position,
+                    logical_size: stream.size,
+                    physical_size: stream.size,
+                    physical_size_measured: true,
+                }))
+            })
+            .collect::<Vec<_>>();
+        sort_streams(&displays, &mut shared, &mut streams);
+        assert_eq!(
+            streams.iter().map(|s| s.path).collect::<Vec<_>>(),
+            vec![3, 2, 1]
+        );
+        let paths = shared
+            .iter()
+            .map(|display| match display {
+                crate::Display::WAYLAND(display) => display.0.path,
+                _ => panic!("unexpected test display"),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(paths, vec![3, 2, 1]);
     }
 
     #[test]

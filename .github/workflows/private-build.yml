@@ -34,7 +34,7 @@ env:
   FLUTTER_MACOS_ARM_VERSION: "3.44.9"
   # for arm64 linux because official Dart SDK does not work
   FLUTTER_ELINUX_VERSION: "3.16.9"
-  TAG_NAME: "v1.5.11"
+  TAG_NAME: "v1.5.12"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   # vcpkg version: 2026.07.29
   # If we change the `VCPKG COMMIT_ID`, please remember:
@@ -45,7 +45,7 @@ env:
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
   VCPKG_CMAKE_VERSION: "4.3.0"
   ARMV7_VCPKG_COMMIT_ID: "6f29f12e82a8293156836ad81cc9bf5af41fe836" # 2025.01.13, got "/opt/artifacts/vcpkg/vcpkg: No such file or directory" with latest version
-  VERSION: "1.5.11"
+  VERSION: "1.5.12"
   NDK_VERSION: "r28c"
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
@@ -765,6 +765,14 @@ jobs:
           # Opt-in, and its macOS tests run nowhere else.
           cargo test --locked --release -p clipboard --features unix-file-copy-paste
 
+      - name: Verify Intel encryption startup
+        if: matrix.job.arch == 'x86_64'
+        run: |
+          set -o pipefail
+          FEATURES=$(./build.py --flutter --hwcodec --unix-file-copy-paste ${{ matrix.job.extra-build-args }} --print-features)
+          cargo test --locked --release --lib --features "$FEATURES" sodium_startup_tests | tee "$RUNNER_TEMP/sodium-startup-tests.log"
+          grep -F 'initialized_entries_preserve_authentication ... ok' "$RUNNER_TEMP/sodium-startup-tests.log"
+
       - name: Ad-hoc sign and smoke test macOS app
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
@@ -1023,7 +1031,9 @@ jobs:
                unzip \
                wget \
                xz-utils \
-               libssl-dev
+               libssl-dev \
+               dbus-x11 \
+               xvfb
             # we have libopus compiled by us.
             apt-get remove -y libopus-dev || true
             # output devs
@@ -1056,6 +1066,15 @@ jobs:
             fi
             echo $JOBS
             cargo build --locked --lib $JOBS --features hwcodec,flutter,unix-file-copy-paste --release
+            # Native tests use the same dependencies/features as the shipped Linux library.
+            export XDG_SESSION_TYPE=x11
+            export XDG_RUNTIME_DIR="$(mktemp -d)"
+            set -eo pipefail
+            dbus-run-session -- xvfb-run -a cargo test --locked --release --lib --features hwcodec,flutter,unix-file-copy-paste | tee /tmp/rustdesk-native-tests.log
+            grep -F 'test flutter_ffi::sodium_startup_tests::initialized_entries_preserve_authentication ... ok' /tmp/rustdesk-native-tests.log
+            grep -F 'test server::uinput::mouce::tests::relative_moves_are_symmetric ... ok' /tmp/rustdesk-native-tests.log
+            dbus-run-session -- xvfb-run -a cargo test --locked --release -p scrap --lib --features hwcodec,wayland pipewire::tests:: | tee /tmp/rustdesk-pipewire-tests.log
+            grep -F 'unmatched_workspace_stream_is_kept_after_selected_monitors ... ok' /tmp/rustdesk-pipewire-tests.log
             rm -rf target/release/deps target/release/build
             rm -rf ~/.cargo
 
