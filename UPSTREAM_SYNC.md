@@ -3,7 +3,7 @@
 上游：https://github.com/rustdesk/rustdesk ，跟踪 master 的新提交和正式发布。
 目标：https://github.com/akurtlua-lgtm/rustdesk-private-build 。
 
-源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.11，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
+源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.12，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
 
 ## 必须保留的行为
 
@@ -68,7 +68,7 @@ Mac 首页回前台重新读取真实的录屏/辅助功能/输入监控状态�
 
 只把3e953e8单独记录为部分集成，连续integrated_commit仍为d46c7c52521a311d3ada8eeacd4f13b94e321258。此前二十三个提交和后来观察到的a98450a Linux X11光标修复共二十四个仍待评估，未纳入本版；PR #3空文件风险与剪贴板授权修补仍未发布。后续比较须扣除明确已部分集成的3e953e8，不能重复回移，也不能把整个区间标为已集成。此验证记录另作元数据提交，不重建同一版本、不移动发布标签。
 
-## 待验证独立候选：1.5.12（构建80）
+## 已完成原生兼容同步：1.5.12（构建80）
 
 按拥有者明确要求补齐2026-11-18观察的上游原生验证：d1d497f Linux uinput相对移动对称取整、b633360在核心/Flutter/已有Android服务入口提前初始化libsodium、54416dc在实际PipeWire排序中保留不匹配显示原点的流。没有更新子模块或依赖版本，没有纳入PR #3旧剪贴板文件兼容风险或此前剪贴板授权补丁。9854296文档改动仅对已有28份README替换hbb_common链接，FR/RU按实际行适配；不存在的KA文件不引入，文档提交只能记为部分集成。
 
@@ -81,3 +81,12 @@ Mac 首页回前台重新读取真实的录屏/辅助功能/输入监控状态�
 入口核对另发现Mac独立service辅助程序不经过global_init、可能先验证custom.txt；本候选仅在src/service.rs的Mac main首行增加相同init_sodium薄调用，不改参数、服务生命周期或授权。实际辅助程序仍由对应Mac构建编译/签名；未在拥有者电脑安装或重启服务。
 
 Linux验证环境补充：首次候选中的Rust测试源码已编译，但旧Ubuntu18打包容器链接测试可执行文件时，现有Ubuntu22主机生成的FFmpeg静态库要求fcntl64而失败。正式候选改为在同一Ubuntu22主机、同一锁定工具链/依赖/发布特性下先运行根crate和scrap原生测试，CARGO_TARGET_DIR仅限该步骤的RUNNER_TEMP目录；不移除hwcodec、不伪造FFI符号、不修改Ubuntu18打包目标或生产源码。随后原容器生成七包集合的Linux包，并在Ubuntu22对实际Flutter应用bundle执行--version加载检查。该验证不宣称Ubuntu18运行时ABI已验收，不借此改变旧发行环境支持声明。
+
+
+2026-11-18 正式发布验证完成：版本1.5.12+80，固定源码140a0a3c0b9465bd35d4d4ed77c8c1c1709bb54b。[候选44266524846](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/44266524846)八任务成功，四个原生Release入口及最终publisher按分支门禁跳过；完整七包归档CRC、来源、大小/SHA256和八份真实日志隐私通过后，同一源码经[PR #6](https://github.com/akurtlua-lgtm/rustdesk-private-build/pull/6)非强制快进main。[正式44279096916](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/44279096916)九任务全部成功，[v1.5.12](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.12)已为稳定最新版。
+
+两轮原生证据均通过：Linux244项根crate和2项真实PipeWire测试（含uinput/新进程加密）及实际应用bundle加载；Windows262项根crate/2项剪贴板；Mac ARM262项根crate/22项剪贴板；Mac Intel1项新进程core/Flutter认证兼容测试。账号凭据过滤、更新版本选择和私有签名防篡改回归通过，两种Mac的Dart和签名加载检查通过。正式七包归档完整下载并独立核对来源、大小、SHA256、CRC及包格式；读回三个校验文件，独立验证Ed25519签名、包身份/版本/平台/架构及七包API摘要、SHA256SUMS与签名元数据绑定一致；九份实际日志隐私通过。标签仍固定上述经测源码，不重建同一版本、不移动标签。
+
+仅把d1d497f、b633360、54416dc三个单提交记录为区间外已完成集成；9854296仅已有28份README完成，缺失docs/README-KA.md仍依赖未集成a7468d0，fully_integrated=false并保留pending。原有3e953e8记录及连续integrated_commit=d46c7c52521a311d3ada8eeacd4f13b94e321258保持，剩余25项待验证；不得把整个区间或该文档整提交标为完成。PR #3旧剪贴板空文件风险和待验证授权补丁均未纳入本版。
+
+回归面仍限于src/server/uinput.rs的相对移动、libs/scrap/src/wayland/pipewire.rs的未匹配流保留，以及src/common.rs、src/flutter_ffi.rs和Mac src/service.rs入口的提前初始化薄调用；libs/scrap/src/common/mod.rs仅测试类型重导出。其余既有文件只改一致版本、README链接、测试门禁和本记录。权限、严格Key、设备授权/E2E、账号边界、Mac定制、Secrets/关闭指纹及确认式签名升级保持。未在本机执行Intel组件，未改服务器、后台、密钥、防火墙、代理或本机应用/权限。真实KDE/物理uinput、实际daemon安装启动和跨版本安装重启未实测，Ubuntu22原生验证不宣称Ubuntu18运行时ABI已验收，Mac仍未公证。
