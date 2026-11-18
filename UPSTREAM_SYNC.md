@@ -77,3 +77,5 @@ Mac 首页回前台重新读取真实的录屏/辅助功能/输入监控状态�
 回归面：src/server/uinput.rs仅Linux相对移动取整；libs/scrap/src/wayland/pipewire.rs仅未匹配流保留；src/common.rs的global_init与src/flutter_ffi.rs的既有入口只增加上游初始化薄调用。其他改动仅测试、执行测试的私有CI步骤、一致版本、链接及本文档。现有rdoss_v1_过滤、HTTPS账号边界、严格licence_key、设备授权/E2E、MacSpaces及输入限制/权限刷新/签名加载、Secrets注入/关闭指纹、独立签名且下载和安装分别确认的升级机制保持原样；不部署服务器或后台，不更改生产配置和本机权限。
 
 候选测试、完整七包与真实日志隐私通过前不进入main；同一源码的main正式构建九任务与七包/SHA256SUMS/独立签名元数据验证通过前不发布或更新已集成基线。原生单元/集成测试不等于真实KDE桌面、物理uinput或跨版本安装已验收，保留这些实机限制。
+
+入口核对另发现Mac独立service辅助程序不经过global_init、可能先验证custom.txt；本候选仅在src/service.rs的Mac main首行增加相同init_sodium薄调用，不改参数、服务生命周期或授权。实际辅助程序仍由对应Mac构建编译/签名；未在拥有者电脑安装或重启服务。

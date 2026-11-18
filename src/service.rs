@@ -5,6 +5,7 @@ fn main() {}
 
 #[cfg(target_os = "macos")]
 fn main() {
+    crate::common::init_sodium();
     let args: Vec<String> = std::env::args().collect();
     crate::common::load_custom_client();
     if args.len() > 1 && args[1] == "--write-plists" {
