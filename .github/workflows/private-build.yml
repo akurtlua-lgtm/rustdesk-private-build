@@ -979,6 +979,29 @@ jobs:
           name: bridge-artifact
           path: ./
 
+      - name: Run native Linux regressions
+        if: matrix.job.arch == 'x86_64'
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/rustdesk-native-tests
+          VCPKG_ROOT: /opt/artifacts/vcpkg
+          XDG_SESSION_TYPE: x11
+        run: |
+          set -eo pipefail
+          # The vcpkg FFmpeg archive is built on this host and requires its fcntl64 ABI.
+          # Keep native tests separate from the unchanged Ubuntu18 packaging target.
+          sudo apt-get install -y build-essential clang libclang-dev pkg-config \
+            libgtk-3-dev libasound2-dev libpulse-dev libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev libva-dev libdbus-1-dev \
+            libxcb-randr0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libxfixes-dev libxtst-dev libxkbcommon-dev libssl-dev dbus-x11 xvfb
+          export XDG_RUNTIME_DIR="$(mktemp -d)"
+          dbus-run-session -- xvfb-run -a cargo test --locked --release --lib --features hwcodec,flutter,unix-file-copy-paste | tee "$RUNNER_TEMP/native-root-tests.log"
+          grep -F 'test flutter_ffi::sodium_startup_tests::initialized_entries_preserve_authentication ... ok' "$RUNNER_TEMP/native-root-tests.log"
+          grep -F 'test server::uinput::mouce::tests::relative_moves_are_symmetric ... ok' "$RUNNER_TEMP/native-root-tests.log"
+          grep -F 'test server::uinput::mouce::tests::positive_moves_are_unchanged ... ok' "$RUNNER_TEMP/native-root-tests.log"
+          dbus-run-session -- xvfb-run -a cargo test --locked --release -p scrap --lib --features hwcodec,wayland pipewire::tests:: | tee "$RUNNER_TEMP/native-pipewire-tests.log"
+          grep -F 'unmatched_workspace_stream_is_kept_after_selected_monitors ... ok' "$RUNNER_TEMP/native-pipewire-tests.log"
+
       - uses: rustdesk-org/run-on-arch-action@d3fcfbb632b84cf7f6bc772bfaaa2c2f4f8789a8 # no release tag; commit 2026-05-26
         name: Build rustdesk
         id: vcpkg
@@ -1031,9 +1054,7 @@ jobs:
                unzip \
                wget \
                xz-utils \
-               libssl-dev \
-               dbus-x11 \
-               xvfb
+               libssl-dev
             # we have libopus compiled by us.
             apt-get remove -y libopus-dev || true
             # output devs
@@ -1066,15 +1087,6 @@ jobs:
             fi
             echo $JOBS
             cargo build --locked --lib $JOBS --features hwcodec,flutter,unix-file-copy-paste --release
-            # Native tests use the same dependencies/features as the shipped Linux library.
-            export XDG_SESSION_TYPE=x11
-            export XDG_RUNTIME_DIR="$(mktemp -d)"
-            set -eo pipefail
-            dbus-run-session -- xvfb-run -a cargo test --locked --release --lib --features hwcodec,flutter,unix-file-copy-paste | tee /tmp/rustdesk-native-tests.log
-            grep -F 'test flutter_ffi::sodium_startup_tests::initialized_entries_preserve_authentication ... ok' /tmp/rustdesk-native-tests.log
-            grep -F 'test server::uinput::mouce::tests::relative_moves_are_symmetric ... ok' /tmp/rustdesk-native-tests.log
-            dbus-run-session -- xvfb-run -a cargo test --locked --release -p scrap --lib --features hwcodec,wayland pipewire::tests:: | tee /tmp/rustdesk-pipewire-tests.log
-            grep -F 'unmatched_workspace_stream_is_kept_after_selected_monitors ... ok' /tmp/rustdesk-pipewire-tests.log
             rm -rf target/release/deps target/release/build
             rm -rf ~/.cargo
 
@@ -1163,6 +1175,14 @@ jobs:
             for name in rustdesk*??.rpm; do
                 mv "$name" /workspace/"${name%%.rpm}-suse.rpm"
             done
+
+      - name: Smoke test the packaged Linux bundle
+        if: matrix.job.arch == 'x86_64'
+        env:
+          XDG_SESSION_TYPE: x11
+        run: |
+          export XDG_RUNTIME_DIR="$(mktemp -d)"
+          test "$(dbus-run-session -- xvfb-run -a ./flutter/build/linux/x64/release/bundle/rustdesk --version)" = "$VERSION"
 
       - name: Preserve Linux installers
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL == '-2'
