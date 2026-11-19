@@ -6,10 +6,20 @@ from unittest.mock import patch
 import zipfile
 
 from mobile_build_error import safe_diagnostics
+from smoke_ios_simulator import select_compatible_iphone
 from verify_mobile_artifacts import verify_android, verify_ios
 
 
 class MobileArtifactTests(unittest.TestCase):
+    def test_simulator_matches_build_sdk_and_refuses_other_runtimes(self):
+        runtimes = {
+            'com.apple.CoreSimulator.SimRuntime.iOS-18-5': [{'isAvailable': True, 'name': 'iPhone 16', 'udid': 'supported'}],
+            'com.apple.CoreSimulator.SimRuntime.iOS-26-0': [{'isAvailable': True, 'name': 'iPhone 17', 'udid': 'unsupported'}],
+        }
+        self.assertEqual(select_compatible_iphone(runtimes, '18.5')['udid'], 'supported')
+        with self.assertRaisesRegex(RuntimeError, 'matching build SDK'):
+            select_compatible_iphone(runtimes, '19.0')
+
     def test_ios_requires_real_rust_exports_not_static_header_helper(self):
         with tempfile.TemporaryDirectory() as directory:
             app = Path(directory)
@@ -45,11 +55,14 @@ class MobileArtifactTests(unittest.TestCase):
     def test_build_diagnostics_omit_private_configuration(self):
         output = safe_diagnostics(
             'note: compilation started\nerror: bad server.private.test https://server.private.test/api 192.0.2.1 secret-value',
-            {'RD_ID_SERVER': 'server.private.test', 'RD_PRIVATE_API_SERVER': 'https://server.private.test/api', 'RD_TOKEN': 'secret-value'},
+            {'RD_ID_SERVER': 'server.private.test:21116', 'RD_PRIVATE_API_SERVER': 'https://server.private.test/api', 'RD_TOKEN': 'secret-value'},
         )
         self.assertIn('error:', output)
         for private in ('server.private.test', '192.0.2.1', 'secret-value'):
             self.assertNotIn(private, output)
+        for invalid in ('https://[bad', 'https://', 'https:///server.private.test'):
+            self.assertNotIn('server.private.test', safe_diagnostics(
+                'error: failed https://server.private.test/account', {'RD_ID_SERVER': invalid}))
 
 
 if __name__ == '__main__':

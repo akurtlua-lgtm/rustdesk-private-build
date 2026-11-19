@@ -111,6 +111,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 150
     env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
       RD_ID_SERVER: ${{ secrets.RD_ID_SERVER }}
       RD_RELAY_SERVER: ${{ secrets.RD_RELAY_SERVER }}
       RD_SERVER_PUBLIC_KEY: ${{ secrets.RD_SERVER_PUBLIC_KEY }}
@@ -153,6 +154,13 @@ jobs:
           doNotCache: false
       - name: Build, inspect and launch actual iOS simulator application
         run: bash .github/scripts/build_private_ios_simulator.sh
+      - name: Retain failed simulator diagnostics separately from verified applications
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: private-mobile-ios-failed-not-for-release
+          path: mobile-output/*
+          if-no-files-found: warn
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: private-mobile-ios-simulator-arm64
