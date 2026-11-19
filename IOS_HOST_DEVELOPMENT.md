@@ -19,3 +19,8 @@
 三个同源码原生 ARM64 Rust1.81.0 测试实际通过：带padding与非法布局、只读取最新帧且不送给错误尺寸编码器、关闭后拒绝收发。新工作流显式执行此纯std模块测试；Cargo默认workspace测试也能发现该测试模块，不要求额外原生mock层。完整SDK/采集/编码/协议链路仍未验收。
 
 下一轮仅为 iOS+feature 提供借用已校验 BGRA 的 concrete PixelBuffer，并放开现有 Frame/convert_to_yuv 的编译门禁；不开放 camera、Display/Capturer、server 或修改 trait 签名。新增独立 required-features Cargo 集成测试目标，经 simctl spawn 在真实匹配 SDK 的 iOS 模拟器进程执行合成色块→Frame.to→VP8生产packet→认证Box→解码，核对尺寸/通道与颜色容差。像素仅为常量，Box密钥仅内存生成，不建立网络或绕过系统录屏授权。不能把这个 CPU 测试当作 Broadcast Extension、录屏授权、真实手机共享或远控会话已经运行。
+
+
+### 实际图像缓冲转换候选
+
+新增独立 CaptureFrame 转换器，用 CoreImage 读取 CVPixelBuffer 的真实格式和图像元数据，仅接受 BGRA 及8位双平面 NV12，按明确方向生成自有连续 BGRA 数据；拒绝不支持格式、无效尺寸、超过32MiB输出或渲染失败。输出供后续同一受授权 Scope 发布，不启动采集或网络，不保留系统缓冲裸指针。两项合成 CoreVideo 原生测试覆盖带行padding的红/蓝图90度旋转及NV12视频范围黑色转换；本机原生ARM64 Swift6实际编译和运行通过，不能代替iOS验证。工作流新增真实设备SDK类型检查和iOS27模拟器编译/执行同两项测试，只有返回码及精确成功标记通过才上传来源绑定证明。仍没有系统采集回调接入或公开手机共享入口，也没有真机验收。

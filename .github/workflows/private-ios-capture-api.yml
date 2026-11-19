@@ -40,7 +40,7 @@ jobs:
             fi
             xcrun --sdk "$sdk" swiftc -swift-version 6 -warnings-as-errors \
               -target "$target" -sdk "$sdk_path" -typecheck \
-              res/ios27-capture/VideoCaptureAPI.swift
+              res/ios27-capture/VideoCaptureAPI.swift res/ios-capture-frame/CaptureFrame.swift
             printf '%s %s ARM64 Swift6 target typecheck passed\n' "$sdk" "$version" >> capture-api-output/SDK_CHECKS.txt
           done
           python3 - <<'PY'
@@ -90,8 +90,10 @@ jobs:
           path: verified-client-input
       - name: Verify immutable controller fixture and install it on the current simulator
         run: python3 .github/scripts/check_existing_ios_client27.py
+      - name: Execute actual synthetic CoreVideo conversion tests
+        run: python3 .github/scripts/run_ios_pixel_buffer_tests.py
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ios27-existing-controller-startup-check
-          path: client-compat-output/verification.json
+          path: client-compat-output/*.json
           if-no-files-found: error
