@@ -998,6 +998,10 @@ async fn handle(data: Data, stream: &mut Connection) {
                         None
                     };
                 } else if name == "hide_cm" {
+                    #[cfg(target_os = "ios")]
+                    {
+                        value = None;
+                    }
                     #[cfg(not(target_os = "ios"))]
                     {
                     value = if crate::hbbs_http::sync::is_pro() || crate::common::is_custom_client()
