@@ -231,12 +231,15 @@ pub async fn create_tcp_connection(
     };
     // Before the handshake, so its read is bounded too; lifted again at authorization.
     stream.set_max_packet_length(MAX_UNAUTHORIZED_MESSAGE);
+    #[cfg(not(target_os = "ios"))]
     tokio::select! {
         handshake = identity_handshake(&mut stream, secure) => handshake?,
         _ = unauthorized.evicted() => {
             bail!("evicted to make room for a newer unauthenticated connection");
         }
     }
+    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+    mobile_host::encrypted_handshake(&server, id, &mut stream, &unauthorized, secure).await?;
 
     #[cfg(target_os = "macos")]
     {

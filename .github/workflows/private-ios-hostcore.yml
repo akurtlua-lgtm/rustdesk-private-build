@@ -46,11 +46,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
           toolchain: '1.81'
-      - name: Test actual protocol messages and require five protocol and stop cases
+      - name: Test actual protocol messages and require seven protocol and cancellation cases
         run: |
           set -o pipefail
           cargo test --locked -p base --features mobile-host-policy mobile_host_ -- --nocapture | tee "$RUNNER_TEMP/mobile-host-policy.log"
-          grep -F 'test result: ok. 5 passed; 0 failed;' "$RUNNER_TEMP/mobile-host-policy.log"
+          grep -F 'test result: ok. 7 passed; 0 failed;' "$RUNNER_TEMP/mobile-host-policy.log"
 
   generate-bridge:
     if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-hostcore-')

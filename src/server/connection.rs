@@ -688,12 +688,15 @@ impl Connection {
         #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
         mobile_view_only::restrict_permissions(&mut conn);
         let addr = hbb_common::try_into_v4(addr);
+        #[cfg(not(target_os = "ios"))]
         if !conn.on_open(addr).await {
             conn.closed = true;
             // sleep to ensure msg got received.
             sleep(1.).await;
             return;
         }
+        #[cfg(not(target_os = "ios"))]
+        {
         #[cfg(target_os = "android")]
         start_channel(rx_to_cm, tx_from_cm);
         #[cfg(target_os = "android")]
@@ -723,6 +726,11 @@ impl Connection {
         }
         if !conn.privacy_mode {
             conn.send_permission(Permission::PrivacyMode, false).await;
+        }
+        }
+        #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+        if !conn.initialize_mobile(&mut hbbs_rx, addr).await {
+            return;
         }
         let mut test_delay_timer =
             crate::rustdesk_interval(time::interval_at(Instant::now(), TEST_DELAY_TIMEOUT));
@@ -1057,8 +1065,18 @@ impl Connection {
                                 last_recv_time = Instant::now();
                                 conn.session_last_recv_time.as_mut().map(|t| *t.lock().unwrap() = Instant::now());
                                 if let Ok(msg_in) = Message::parse_from_bytes(&bytes) {
+                                    #[cfg(not(target_os = "ios"))]
                                     if !conn.on_message(msg_in).await {
                                         break;
+                                    }
+                                    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                                    match hbbs_rx.until(conn.on_message(msg_in)).await {
+                                        Some(true) => {}
+                                        Some(false) => break,
+                                        None => {
+                                            conn.cancel_mobile_session().await;
+                                            break;
+                                        }
                                     }
                                     if conn.port_forward_socket.is_some() && conn.authorized {
                                         log::info!("Port forward, last_test_delay is none: {}", conn.last_test_delay.is_none());
@@ -1102,8 +1120,7 @@ impl Connection {
                         }
                         #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
                         {
-                            raii::AuthedConnID::check_remove_session(conn.inner.id(), conn.session_key());
-                            conn.on_close("capture session", true).await;
+                            conn.cancel_mobile_session().await;
                         }
                         break;
                     }
@@ -1114,8 +1131,13 @@ impl Connection {
                             video_service::notify_video_frame_fetched(vf.display as usize, id, Some(instant.into()));
                         }
                     }
+                    #[cfg(not(target_os = "ios"))]
                     if let Err(err) = conn.stream.send(&value as &Message).await {
                         conn.on_close(&err.to_string(), false).await;
+                        break;
+                    }
+                    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                    if !conn.send_mobile(&mut hbbs_rx, &value).await {
                         break;
                     }
                 },
@@ -1137,7 +1159,12 @@ impl Connection {
                         Some(message::Union::Misc(m)) => {
                             match &m.union {
                                 Some(misc::Union::StopService(_)) => {
+                                    #[cfg(not(target_os = "ios"))]
                                     conn.send_close_reason_no_retry("").await;
+                                    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                                    if !conn.notify_mobile_close(&mut hbbs_rx, "").await {
+                                        break;
+                                    }
                                     conn.on_close("stop service", false).await;
                                     break;
                                 }
@@ -1175,18 +1202,31 @@ impl Connection {
                     }
 
                     let msg: &Message = &msg;
+                    #[cfg(not(target_os = "ios"))]
                     if let Err(err) = conn.stream.send(msg).await {
                         conn.on_close(&err.to_string(), false).await;
+                        break;
+                    }
+                    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                    if !conn.send_mobile(&mut hbbs_rx, msg).await {
                         break;
                     }
                 },
                 Some(data) = rx_from_authed.recv() => {
                     match data {
                         ipc::Data::Close => {
+                            #[cfg(not(target_os = "ios"))]
                             conn.send(crate::common::make_privacy_mode_msg(
                                 back_notification::PrivacyModeState::PrvOnByOther,
                                 String::new(),
                             )).await;
+                            #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                            if !conn.send_mobile_notice(&mut hbbs_rx, crate::common::make_privacy_mode_msg(
+                                back_notification::PrivacyModeState::PrvOnByOther,
+                                String::new(),
+                            )).await {
+                                break;
+                            }
                             conn.on_close("privacy mode", false).await;
                             break;
                         }
@@ -1208,7 +1248,12 @@ impl Connection {
                     raii::AuthedConnID::check_wake_lock_on_setting_changed();
                     if let Some((instant, minute)) = conn.auto_disconnect_timer.as_ref() {
                         if instant.elapsed().as_secs() > minute * 60 {
+                            #[cfg(not(target_os = "ios"))]
                             conn.send_close_reason_no_retry("Connection failed due to inactivity").await;
+                            #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                            if !conn.notify_mobile_close(&mut hbbs_rx, "Connection failed due to inactivity").await {
+                                break;
+                            }
                             conn.on_close("auto disconnect", true).await;
                             break;
                         }
@@ -1231,7 +1276,12 @@ impl Connection {
                             target_bitrate: video_service::VIDEO_QOS.lock().unwrap().bitrate(),
                             ..Default::default()
                         });
+                        #[cfg(not(target_os = "ios"))]
                         conn.send(msg_out.into()).await;
+                        #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                        if !conn.send_mobile_notice(&mut hbbs_rx, msg_out).await {
+                            break;
+                        }
                     }
                     if conn.is_authed_remote_conn() || conn.view_camera {
                         if let Some(last_test_delay) = conn.last_test_delay {
@@ -1259,6 +1309,8 @@ impl Connection {
             conn.try_empty_file_clipboard();
         }
 
+        #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+        raii::AuthedConnID::check_remove_session(conn.inner.id(), conn.session_key());
         if let Some(video_privacy_conn_id) = privacy_mode::get_privacy_mode_conn_id() {
             if video_privacy_conn_id == id {
                 let _ = Self::turn_off_privacy_to_msg(id, String::new());

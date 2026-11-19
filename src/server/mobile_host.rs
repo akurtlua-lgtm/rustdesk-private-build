@@ -1,6 +1,6 @@
 use super::{display_service, Server, ServerPtr, ServerPtrWeak};
 use base::mobile_host_stop::{StopReceiver, StopSignal};
-use hbb_common::{bail, ResultType};
+use hbb_common::{anyhow::anyhow, bail, ResultType};
 use scrap::{mobile_frame::FrameInbox, CaptureLease};
 use std::{
     collections::HashMap,
@@ -85,4 +85,33 @@ pub(crate) fn source_for(server: &ServerPtrWeak) -> Option<Arc<FrameInbox>> {
         return None;
     }
     Some(scope.source.clone())
+}
+
+pub(super) async fn encrypted_handshake(
+    server: &ServerPtr,
+    id: i32,
+    stream: &mut super::Stream,
+    admission: &super::connection::UnauthorizedID,
+    secure: bool,
+) -> ResultType<()> {
+    if !secure {
+        bail!("Mobile sharing requires an encrypted connection");
+    }
+    let mut stopped = stop_receiver(&Arc::downgrade(server), id)
+        .ok_or_else(|| anyhow!("No active mobile capture session"))?;
+    stopped
+        .until(async {
+            hbb_common::tokio::select! {
+                result = super::identity_handshake(stream, true) => result,
+                _ = admission.evicted() => {
+                    bail!("evicted to make room for a newer unauthenticated connection");
+                }
+            }
+        })
+        .await
+        .ok_or_else(|| anyhow!("Mobile capture stopped during handshake"))??;
+    if !stream.is_secured() {
+        bail!("Mobile sharing requires an encrypted connection");
+    }
+    Ok(())
 }
