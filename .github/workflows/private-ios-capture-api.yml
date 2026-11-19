@@ -1,0 +1,60 @@
+name: Private iOS 27 capture API compatibility
+
+on:
+  push:
+    branches: ['codex/ios-capture-api-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screen-capture-api:
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-capture-api-')
+    runs-on: xcode-27
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Verify both actual ARM64 iOS SDK APIs without recording or server configuration
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          mkdir -p capture-api-output
+          for sdk in iphoneos iphonesimulator; do
+            version=$(xcrun --sdk "$sdk" --show-sdk-version)
+            test "${version%%.*}" = 27
+            sdk_path=$(xcrun --sdk "$sdk" --show-sdk-path)
+            target=arm64-apple-ios27.0
+            if [[ "$sdk" == iphonesimulator ]]; then
+              target=arm64-apple-ios27.0-simulator
+            fi
+            xcrun --sdk "$sdk" swiftc -swift-version 6 -warnings-as-errors \
+              -target "$target" -sdk "$sdk_path" -typecheck \
+              res/ios27-capture/VideoCaptureAPI.swift
+            printf '%s %s ARM64 Swift6 typecheck passed\n' "$sdk" "$version" >> capture-api-output/SDK_CHECKS.txt
+          done
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          source = os.environ['GITHUB_SHA']
+          if not re.fullmatch('[a-f0-9]{40}', source):
+              raise ValueError('Full source SHA required')
+          record = dict(source=source, run_id=os.environ['GITHUB_RUN_ID'],
+                        xcode=subprocess.check_output(['xcodebuild', '-version'], text=True).strip(),
+                        both_sdk_typecheck_passed=True, architecture='arm64',
+                        capture_executed=False, picker_presented=False,
+                        remote_session_tested=False, physical_device_tested=False,
+                        installable=False, signed=False)
+          Path('capture-api-output/verification.json').write_text(json.dumps(record, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios27-screen-capture-api-check
+          path: capture-api-output/*
+          if-no-files-found: error
