@@ -46,7 +46,7 @@ export CFLAGS_aarch64_unknown_linux_ohos="--target=aarch64-linux-ohos --sysroot=
 export CXXFLAGS_aarch64_unknown_linux_ohos="$CFLAGS_aarch64_unknown_linux_ohos"
 export BINDGEN_EXTRA_CLANG_ARGS_aarch64_unknown_linux_ohos="$CFLAGS_aarch64_unknown_linux_ohos"
 export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_OHOS_LINKER="$native/llvm/bin/clang"
-export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_OHOS_RUSTFLAGS="-C link-arg=--target=aarch64-linux-ohos -C link-arg=--sysroot=$native/sysroot -C link-arg=-lc++_shared"
+export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_OHOS_RUSTFLAGS="-C link-arg=--target=aarch64-linux-ohos -C link-arg=--sysroot=$native/sysroot -C link-arg=-lc++_shared -C rpath=no"
 export SODIUM_USE_PKG_CONFIG=1
 export LIBSODIUM_STATIC=1
 export PKG_CONFIG_ALLOW_CROSS_aarch64_unknown_linux_ohos=1
