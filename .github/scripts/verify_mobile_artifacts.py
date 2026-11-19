@@ -57,8 +57,9 @@ def verify_ios(path, version, build_number, application_id):
             raise ValueError('Simulator contains a non-ARM64 executable')
         if 'IOSSIMULATOR' not in run('xcrun', 'vtool', '-show-build', str(binary)):
             raise ValueError('Simulator bundle contains a device binary')
-    symbols = run('xcrun', 'nm', '-g', str(executable))
-    if '_session_get_rgba' not in symbols or '_dummy_method_to_enforce_bundling' not in symbols:
+    symbols = run('xcrun', 'nm', '-gU', str(executable))
+    required = ('session_get_rgba', 'wire_session_start', 'wire_session_login', 'wire_main_init')
+    if any(not re.search(r'\b_' + symbol + r'$', symbols, re.M) for symbol in required):
         raise ValueError('Simulator executable is missing the Rust session core')
     return {'platform': 'ios-simulator', 'architecture': 'arm64', 'physical_device_installable': False}
 

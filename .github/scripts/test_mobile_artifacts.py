@@ -1,14 +1,32 @@
 from pathlib import Path
+import plistlib
 import tempfile
 import unittest
 from unittest.mock import patch
 import zipfile
 
 from mobile_build_error import safe_diagnostics
-from verify_mobile_artifacts import verify_android
+from verify_mobile_artifacts import verify_android, verify_ios
 
 
 class MobileArtifactTests(unittest.TestCase):
+    def test_ios_requires_real_rust_exports_not_static_header_helper(self):
+        with tempfile.TemporaryDirectory() as directory:
+            app = Path(directory)
+            info = dict(CFBundleIdentifier='private.app', CFBundleExecutable='Runner',
+                        CFBundleShortVersionString='1.5.14', CFBundleVersion='82',
+                        CFBundleSupportedPlatforms=['iPhoneSimulator'])
+            (app / 'Info.plist').write_bytes(plistlib.dumps(info))
+            symbols = '\n'.join('00000001 T _' + symbol for symbol in
+                                ('session_get_rgba', 'wire_session_start', 'wire_session_login', 'wire_main_init'))
+            def inspect(*args):
+                return {'lipo': 'arm64', 'vtool': 'platform IOSSIMULATOR', 'nm': symbols}[args[1]]
+            with patch('verify_mobile_artifacts.run', side_effect=inspect):
+                self.assertEqual(verify_ios(app, '1.5.14', '82', 'private.app')['platform'], 'ios-simulator')
+                symbols = symbols.replace('_wire_session_login', '_missing_login')
+                with self.assertRaisesRegex(ValueError, 'Rust session core'):
+                    verify_ios(app, '1.5.14', '82', 'private.app')
+
     def test_apk_with_wrong_identity_or_intel_core_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             apk = Path(directory) / 'test.apk'
