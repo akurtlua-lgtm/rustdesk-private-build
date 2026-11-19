@@ -68,3 +68,30 @@ jobs:
           name: ios27-screen-capture-api-check
           path: capture-api-output/*
           if-no-files-found: error
+
+  existing-controller-on-ios27:
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-capture-api-')
+    runs-on: xcode-27
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Require an actual ARM64 simulator host
+        run: test "$(uname -m)" = arm64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: 44475602661
+          name: private-mobile-ios-simulator-arm64
+          path: verified-client-input
+      - name: Verify immutable controller fixture and install it on the current simulator
+        run: python3 .github/scripts/check_existing_ios_client27.py
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios27-existing-controller-startup-check
+          path: client-compat-output/verification.json
+          if-no-files-found: error
