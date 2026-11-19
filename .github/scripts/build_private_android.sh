@@ -17,6 +17,7 @@ cp "$ndk_tools/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" "$native_
 "$ndk_tools/bin/llvm-strip" --strip-unneeded "$native_dir/librustdesk.so"
 
 export ORG_GRADLE_PROJECT_rustdeskApplicationId="$MOBILE_APPLICATION_ID"
+export GRADLE_OPTS="${GRADLE_OPTS:-} -Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.workers.max=2"
 (
   cd flutter
   flutter build apk --release --target-platform android-arm64 \

@@ -22,6 +22,9 @@ config['overlay-triplets'] = [str(root / 'res/vcpkg-triplets')]
 PY
 "$VCPKG_ROOT/vcpkg" install --triplet arm64-ios-simulator \
   --x-manifest-root="$manifest_dir" --x-install-root="$VCPKG_ROOT/installed"
+# The locked magnum-opus build script derives arm64-ios and ignores VCPKG_TARGET_TRIPLET.
+test ! -e "$VCPKG_ROOT/installed/arm64-ios"
+ln -s arm64-ios-simulator "$VCPKG_ROOT/installed/arm64-ios"
 export VCPKG_TARGET_TRIPLET=arm64-ios-simulator
 export SODIUM_USE_PKG_CONFIG=1
 export LIBSODIUM_STATIC=1
@@ -29,6 +32,9 @@ export PKG_CONFIG_ALLOW_CROSS_aarch64_apple_ios_sim=1
 export PKG_CONFIG_LIBDIR_aarch64_apple_ios_sim="$VCPKG_ROOT/installed/arm64-ios-simulator/lib/pkgconfig"
 export PKG_CONFIG_LIBDIR_aarch64_apple_darwin="$VCPKG_ROOT/installed/arm64-osx/lib/pkgconfig"
 export IPHONEOS_DEPLOYMENT_TARGET=15.0
+# coreaudio-sys 0.2.15 passes the Rust -ios-sim triple directly to Clang.
+ios_sim_sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
+export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim="--target=arm64-apple-ios15.0-simulator -isysroot \"$ios_sim_sdk\""
 cargo build --locked --release --lib --target aarch64-apple-ios-sim --features flutter
 test -s target/aarch64-apple-ios-sim/release/liblibrustdesk.a
 (
@@ -43,7 +49,7 @@ derived="$RUNNER_TEMP/private-ios-derived"
 if ! xcodebuild -workspace flutter/ios/Runner.xcworkspace -scheme Runner \
   -configuration Debug -sdk iphonesimulator \
   -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived" \
-  PRODUCT_BUNDLE_IDENTIFIER="$MOBILE_APPLICATION_ID" \
+  RUSTDESK_IOS_APPLICATION_ID="$MOBILE_APPLICATION_ID" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGN_ENTITLEMENTS= build \
   > "$RUNNER_TEMP/private-ios-xcode.log" 2>&1; then
   python3 .github/scripts/mobile_build_error.py "$RUNNER_TEMP/private-ios-xcode.log"
