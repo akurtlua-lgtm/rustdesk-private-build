@@ -51,6 +51,7 @@ if ! xcodebuild -workspace flutter/ios/Runner.xcworkspace -scheme Runner \
   -configuration Debug -sdk iphonesimulator \
   -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived" \
   RUSTDESK_IOS_APPLICATION_ID="$MOBILE_APPLICATION_ID" \
+  ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
   CODE_SIGNING_ALLOWED=NO CODE_SIGN_ENTITLEMENTS= build \
   > "$RUNNER_TEMP/private-ios-xcode.log" 2>&1; then
   python3 .github/scripts/mobile_build_error.py "$RUNNER_TEMP/private-ios-xcode.log"
