@@ -2478,6 +2478,8 @@ pub fn load_custom_client() {
         ("relay-server".to_owned(), env!("RD_RELAY_SERVER").to_owned()),
         ("key".to_owned(), env!("RD_SERVER_PUBLIC_KEY").to_owned()),
     ]);
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    crate::platform::private_mobile::load_api_server();
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());

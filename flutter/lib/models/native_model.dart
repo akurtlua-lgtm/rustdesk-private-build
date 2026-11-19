@@ -221,10 +221,7 @@ class PlatformFFI {
         name = macOsInfo.computerName;
         id = macOsInfo.systemGUID ?? '';
       }
-      if (isAndroid || isIOS) {
-        debugPrint(
-            '_appType:$_appType,info1-id:$id,info2-name:$name,dir:$_dir,homeDir:$_homeDir');
-      } else {
+      if (!isAndroid && !isIOS) {
         debugPrint(
             '_appType:$_appType,info1-id:$id,info2-name:$name,dir:$_dir');
       }

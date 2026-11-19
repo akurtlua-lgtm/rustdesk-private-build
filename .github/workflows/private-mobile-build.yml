@@ -1,0 +1,144 @@
+name: Private mobile development builds
+
+on:
+  push:
+    branches: ['codex/mobile-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-mobile-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VERSION: '1.5.14'
+  BUILD_NUMBER: '82'
+  MOBILE_APPLICATION_ID: 'io.github.akurtlualgtm.rustdesk'
+  FLUTTER_VERSION: '3.24.5'
+  VCPKG_COMMIT_ID: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
+
+jobs:
+  mobile-config:
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Test mobile configuration and artifact checks
+        run: python3 -m unittest discover -s .github/scripts -p 'test_mobile*.py' -v
+      - name: Check private configuration without printing values
+        env:
+          RD_ID_SERVER: ${{ secrets.RD_ID_SERVER }}
+          RD_RELAY_SERVER: ${{ secrets.RD_RELAY_SERVER }}
+          RD_SERVER_PUBLIC_KEY: ${{ secrets.RD_SERVER_PUBLIC_KEY }}
+          RD_PRIVATE_API_SERVER: ${{ secrets.RD_PRIVATE_API_SERVER }}
+        run: python3 .github/scripts/mobile_build_config.py
+
+  generate-bridge:
+    needs: mobile-config
+    uses: ./.github/workflows/bridge.yml
+    secrets:
+      RD_ID_SERVER: ${{ secrets.RD_ID_SERVER }}
+      RD_RELAY_SERVER: ${{ secrets.RD_RELAY_SERVER }}
+      RD_SERVER_PUBLIC_KEY: ${{ secrets.RD_SERVER_PUBLIC_KEY }}
+
+  android-arm64:
+    needs: [mobile-config, generate-bridge]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 150
+    env:
+      RD_ID_SERVER: ${{ secrets.RD_ID_SERVER }}
+      RD_RELAY_SERVER: ${{ secrets.RD_RELAY_SERVER }}
+      RD_SERVER_PUBLIC_KEY: ${{ secrets.RD_SERVER_PUBLIC_KEY }}
+      RD_PRIVATE_API_SERVER: ${{ secrets.RD_PRIVATE_API_SERVER }}
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: bridge-artifact
+          path: ./
+      - name: Install Android native prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev llvm-dev nasm ninja-build pkg-config autoconf automake libtool
+          python3 -m pip install 'cmake==4.3.0'
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: '1.81'
+          targets: aarch64-linux-android
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+        with:
+          vcpkgDirectory: ${{ env.VCPKG_ROOT }}
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+      - name: Install pinned cargo-ndk
+        run: cargo install cargo-ndk --version 3.1.2 --locked
+      - name: Build and verify unsigned Android ARM64 application
+        run: bash .github/scripts/build_private_android.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: private-mobile-android-arm64-unsigned
+          path: mobile-output/*
+          if-no-files-found: error
+
+  ios-simulator-arm64:
+    needs: [mobile-config, generate-bridge]
+    runs-on: macos-15
+    timeout-minutes: 150
+    env:
+      RD_ID_SERVER: ${{ secrets.RD_ID_SERVER }}
+      RD_RELAY_SERVER: ${{ secrets.RD_RELAY_SERVER }}
+      RD_SERVER_PUBLIC_KEY: ${{ secrets.RD_SERVER_PUBLIC_KEY }}
+      RD_PRIVATE_API_SERVER: ${{ secrets.RD_PRIVATE_API_SERVER }}
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Require a native ARM64 simulator host
+        run: test "$(uname -m)" = arm64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: bridge-artifact
+          path: ./
+      - name: Install iOS native prerequisites
+        run: |
+          brew install nasm autoconf automake libtool pkg-config
+          python3 -m pip install --break-system-packages 'cmake==4.3.0'
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: '1.81'
+          targets: aarch64-apple-ios-sim
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: arm64
+          cache: true
+      - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+        with:
+          vcpkgDirectory: ${{ env.VCPKG_ROOT }}
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+      - name: Build, inspect and launch actual iOS simulator application
+        run: bash .github/scripts/build_private_ios_simulator.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: private-mobile-ios-simulator-arm64
+          path: mobile-output/*
+          if-no-files-found: error

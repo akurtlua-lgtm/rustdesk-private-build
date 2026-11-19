@@ -26,6 +26,9 @@ pub mod gtk_sudo;
 #[cfg(target_os = "android")]
 pub mod android_log;
 
+#[cfg(any(target_os = "android", target_os = "ios", test))]
+pub(crate) mod private_mobile;
+
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use base::message_proto::CursorData;
 #[cfg(all(

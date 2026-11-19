@@ -51,6 +51,12 @@ fn link_vcpkg(mut path: PathBuf, name: &str) -> PathBuf {
     } else {
         format!("{}-{}", target_arch, target_os)
     };
+    if target_os == "ios"
+        && target_arch == "arm64"
+        && std::env::var("CARGO_CFG_TARGET_ABI").as_deref() == Ok("sim")
+    {
+        target = "arm64-ios-simulator".to_owned();
+    }
     if target_arch == "x86" {
         target = target.replace("x64", "x86");
     }

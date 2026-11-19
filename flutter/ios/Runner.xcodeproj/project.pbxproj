@@ -383,9 +383,11 @@
 					"$(SDKROOT)/usr/lib/swift",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/",
 				);
+				RUSTDESK_IOS_CORE_LIBRARY = "$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a";
+				"RUSTDESK_IOS_CORE_LIBRARY[sdk=iphonesimulator*]" = "$(PROJECT_DIR)/../../target/aarch64-apple-ios-sim/release/liblibrustdesk.a";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(RUSTDESK_IOS_CORE_LIBRARY)",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",
@@ -579,9 +581,11 @@
 					"$(SDKROOT)/usr/lib/swift",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/",
 				);
+				RUSTDESK_IOS_CORE_LIBRARY = "$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a";
+				"RUSTDESK_IOS_CORE_LIBRARY[sdk=iphonesimulator*]" = "$(PROJECT_DIR)/../../target/aarch64-apple-ios-sim/release/liblibrustdesk.a";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(RUSTDESK_IOS_CORE_LIBRARY)",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",
@@ -667,9 +671,11 @@
 					"$(SDKROOT)/usr/lib/swift",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/",
 				);
+				RUSTDESK_IOS_CORE_LIBRARY = "$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a";
+				"RUSTDESK_IOS_CORE_LIBRARY[sdk=iphonesimulator*]" = "$(PROJECT_DIR)/../../target/aarch64-apple-ios-sim/release/liblibrustdesk.a";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(RUSTDESK_IOS_CORE_LIBRARY)",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",
