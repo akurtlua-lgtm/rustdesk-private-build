@@ -17,3 +17,5 @@
 每次采集应创建独立 `FrameInbox`，串行producer和单个consumer，pending最多一帧；返回帧的所有权交给consumer，供后续Capturer另持有。32MiB是单帧上限，不是整个进程总内存上限，close也不能撤回已经取走的帧。新模块的状态只由 publish、dimensions、take_frame、close 读取：publish在同一锁内更新尺寸和pending，dimensions供未来Display枚举，take_frame要求与编码器尺寸一致（不一致时保留给重建后的capturer），close清帧和尺寸且该实例永不重开。没有过期计时、帧队列或旧采集路径改写。原生SDK回调、颜色转换、首帧授权门禁和本地断连尚未接入，关闭缓冲不等于已停止系统录屏。
 
 三个同源码原生 ARM64 Rust1.81.0 测试实际通过：带padding与非法布局、只读取最新帧且不送给错误尺寸编码器、关闭后拒绝收发。新工作流显式执行此纯std模块测试；Cargo默认workspace测试也能发现该测试模块，不要求额外原生mock层。完整SDK/采集/编码/协议链路仍未验收。
+
+下一轮仅为 iOS+feature 提供借用已校验 BGRA 的 concrete PixelBuffer，并放开现有 Frame/convert_to_yuv 的编译门禁；不开放 camera、Display/Capturer、server 或修改 trait 签名。新增独立 required-features Cargo 集成测试目标，经 simctl spawn 在真实匹配 SDK 的 iOS 模拟器进程执行合成色块→Frame.to→VP8生产packet→认证Box→解码，核对尺寸/通道与颜色容差。像素仅为常量，Box密钥仅内存生成，不建立网络或绕过系统录屏授权。不能把这个 CPU 测试当作 Broadcast Extension、录屏授权、真实手机共享或远控会话已经运行。

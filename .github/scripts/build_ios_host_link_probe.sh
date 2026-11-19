@@ -51,3 +51,6 @@ if ! xcodebuild -project res/ios-host-probe/Probe.xcodeproj -target BroadcastPro
 fi
 python3 .github/scripts/verify_ios_host_probe.py \
   "$derived/Release-$PROBE_SDK/BroadcastProbe.appex" "$PROBE_SDK"
+if [[ "$PROBE_SDK" == iphonesimulator ]]; then
+  python3 .github/scripts/run_ios_capture_probe.py
+fi

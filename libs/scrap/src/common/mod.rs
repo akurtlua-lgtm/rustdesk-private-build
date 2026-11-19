@@ -44,6 +44,10 @@ pub mod codec;
 pub mod convert;
 #[cfg(any(test, feature = "mobile-view-only-host"))]
 pub mod mobile_frame;
+#[cfg(all(target_os = "ios", feature = "mobile-view-only-host"))]
+mod mobile_pixel_buffer;
+#[cfg(all(target_os = "ios", feature = "mobile-view-only-host"))]
+pub use self::mobile_pixel_buffer::PixelBuffer;
 #[cfg(feature = "hwcodec")]
 pub mod hwcodec;
 #[cfg(feature = "mediacodec")]
@@ -179,13 +183,13 @@ pub trait TraitPixelBuffer {
     fn pixfmt(&self) -> Pixfmt;
 }
 
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(any(not(target_os = "ios"), feature = "mobile-view-only-host"))]
 pub enum Frame<'a> {
     PixelBuffer(PixelBuffer<'a>),
     Texture((*mut c_void, usize)),
 }
 
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(any(not(target_os = "ios"), feature = "mobile-view-only-host"))]
 impl Frame<'_> {
     pub fn valid<'a>(&'a self) -> bool {
         match self {
