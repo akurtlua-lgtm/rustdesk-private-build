@@ -3,7 +3,7 @@
 上游：https://github.com/rustdesk/rustdesk ，跟踪 master 的新提交和正式发布。
 目标：https://github.com/akurtlua-lgtm/rustdesk-private-build 。
 
-源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.12，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
+源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.13，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
 
 ## 必须保留的行为
 
@@ -92,7 +92,7 @@ Linux验证环境补充：首次候选中的Rust测试源码已编译，但旧Ub
 回归面仍限于src/server/uinput.rs的相对移动、libs/scrap/src/wayland/pipewire.rs的未匹配流保留，以及src/common.rs、src/flutter_ffi.rs和Mac src/service.rs入口的提前初始化薄调用；libs/scrap/src/common/mod.rs仅测试类型重导出。其余既有文件只改一致版本、README链接、测试门禁和本记录。权限、严格Key、设备授权/E2E、账号边界、Mac定制、Secrets/关闭指纹及确认式签名升级保持。未在本机执行Intel组件，未改服务器、后台、密钥、防火墙、代理或本机应用/权限。真实KDE/物理uinput、实际daemon安装启动和跨版本安装重启未实测，Ubuntu22原生验证不宣称Ubuntu18运行时ABI已验收，Mac仍未公证。
 
 
-## 待验证候选：1.5.13（构建81）
+## 已完成可选账号 UI 同步：1.5.13（构建81）
 
 仅适配2026-11-19观察到的上游669cb8ac62aa20d3626395877d7dd0357aec7ed2：新增可选内置hide-account-password-login开关。自建客户端保持未配置，不启用Y，既有账号密码登录、注册审核、设备记录隔离及rdoss_v1_信令过滤保持。该开关只隐藏客户端UI，不宣称禁用后台密码认证或实现原生远控账号ACL；OIDC-only加载/空provider提示只在显式Y时出现，设备端授权/严格Key/E2E不变。
 
@@ -101,3 +101,12 @@ Linux验证环境补充：首次候选中的Rust测试源码已编译，但旧Ub
 保留上游4项并补充2项无OIDC的OSS实际账号密码提交回归（未配置时点击Login、N时按Enter），核对/api/login请求及后台审核中错误提示；不宣称实际后台注册审核已实测。上游控件测试覆盖未配置/N/Y登录字段和回车提交入口、OIDC按钮，以及隐藏模式首帧加载和空provider状态。本机使用现有Flutter3.44.9与仓库既有临时ARM兼容补丁、正式构建生成桥接执行通过；临时主题/依赖改动已恢复，不提交、不运行codegen。未应用既有兼容补丁时的本地SDK编译失败不能称为feature回归通过；完整候选仍须验证工作流固定SDK及四平台原生、七包和实际日志。候选通过前不进main，正式九任务/七包/独立签名核验后才更新集成记录。
 
 保留开源服务端和独立账号后台、现有权限及Mac功能、Secrets/noreply、关闭指纹和下载/安装分别确认的签名升级。没有修改服务器、账号后台、密钥、防火墙、代理、本机应用/权限或新增Android/iOS/Web构建。
+
+
+2026-11-19 正式验证完成：固定源码4a7b5b01c2499f8e3a7a398ad34b5aff7fbf19fb的[候选44437351836](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/44437351836)八任务成功，四个原生Release入口及最终publisher按候选门禁跳过。完整七包归档来源/CRC/大小/SHA256及八份实际日志隐私通过后，同一源码经[PR #7](https://github.com/akurtlua-lgtm/rustdesk-private-build/pull/7)非强制快进main。[正式44449121745](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/44449121745)九任务成功，[v1.5.13](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.13)已为稳定最新版。
+
+正式七个安装包独立完整下载、包格式/大小/SHA256核验通过；三个校验文件的API摘要及独立Ed25519签名、仓库身份/版本/平台/架构、七包API/SHA256SUMS/签名元数据绑定一致，九份日志隐私通过。两种Mac实际Dart报告均183项通过、1项跳过，六个账号UI/密码提交与审核中提示用例逐项通过。Linux244项根crate及2项真实PipeWire测试、Windows262项根crate/2项剪贴板、Mac ARM262项根crate/22项剪贴板、Mac Intel1项新进程core/Flutter加密兼容回归继续通过；账号信令过滤、严格Key及私有签名/更新选择门禁保留。未在本机执行Intel组件，不宣称真实远控或跨版本安装重启已验收，Mac仍未公证。
+
+仅记录669cb8a的上述功能范围已采用；意大利语值按维护者政策留空，所以fully_integrated=false且该剩余范围继续pending。d40e1da移动端鼠标修复尚未进入本次桌面正式版。连续integrated_commit仍为d46c7c52521a311d3ada8eeacd4f13b94e321258；25项旧待评估加两个新范围，共27项pending，不能重复应用669的已完成运行路径。其余部分集成记录保持。此为发布后的文档/基线元数据提交，不重建同一版本或移动发布标签。
+
+拥有者后来明确提出Android/iOS及原生/兼容版鸿蒙开发，相关源码和构建在独立移动候选分支进行，不能将它们的开发产物视为本次桌面正式版或借此扩大定时桌面同步的发布范围。账号后台、生产服务器、密钥、防火墙、代理及本机权限未改。
