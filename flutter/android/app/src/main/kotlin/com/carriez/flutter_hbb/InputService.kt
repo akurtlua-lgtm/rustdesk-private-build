@@ -463,8 +463,6 @@ class InputService : AccessibilityService() {
         } else {
         }
 
-        Log.d(logTag, "onKeyEvent $keyEvent textToCommit:$textToCommit")
-
         var ke: KeyEventAndroid? = null
         if (Build.VERSION.SDK_INT < 33 || textToCommit == null) {
             ke = KeyEventConverter.toAndroidKeyEvent(keyEvent)
@@ -678,7 +676,6 @@ class InputService : AccessibilityService() {
 
         var success = false
 
-        Log.d(logTag, "existing text:$text textToCommit:$textToCommit textSelectionStart:$textSelectionStart textSelectionEnd:$textSelectionEnd")
 
         if (textToCommit != null) {
             if ((textSelectionStart == -1) || (textSelectionEnd == -1)) {

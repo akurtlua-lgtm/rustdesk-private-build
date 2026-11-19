@@ -1,0 +1,9 @@
+{
+  "name": "rustdesk-private-build-tools",
+  "private": true,
+  "version": "1.0.0",
+  "devDependencies": {
+    "@ohos/hvigor": "6.0.6",
+    "@ohos/hvigor-ohos-plugin": "6.0.6"
+  }
+}

@@ -51,6 +51,15 @@ fn link_vcpkg(mut path: PathBuf, name: &str) -> PathBuf {
     } else {
         format!("{}-{}", target_arch, target_os)
     };
+    if target_os == "ios"
+        && target_arch == "arm64"
+        && std::env::var("CARGO_CFG_TARGET_ABI").as_deref() == Ok("sim")
+    {
+        target = "arm64-ios-simulator".to_owned();
+    }
+    if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("ohos") {
+        target = format!("{}-ohos", target_arch);
+    }
     if target_arch == "x86" {
         target = target.replace("x64", "x86");
     }
@@ -250,7 +259,7 @@ fn main() {
     gen_vcpkg_package("libyuv", "yuv_ffi.h", "yuv_ffi.rs", ".*");
     // ffmpeg();
 
-    if target_os == "ios" {
+    if target_os == "ios" || std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("ohos") {
         // nothing
     } else if target_os == "android" {
         println!("cargo:rustc-cfg=android");

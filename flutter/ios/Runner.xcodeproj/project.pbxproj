@@ -383,9 +383,11 @@
 					"$(SDKROOT)/usr/lib/swift",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/",
 				);
+				RUSTDESK_IOS_CORE_LIBRARY = "$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a";
+				"RUSTDESK_IOS_CORE_LIBRARY[sdk=iphonesimulator*]" = "$(PROJECT_DIR)/../../target/aarch64-apple-ios-sim/release/liblibrustdesk.a";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(RUSTDESK_IOS_CORE_LIBRARY)",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",
@@ -438,7 +440,8 @@
 					"-framework",
 					"\"wakelock_plus\"",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.carriez.flutterHbb;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(RUSTDESK_IOS_APPLICATION_ID)";
+				RUSTDESK_IOS_APPLICATION_ID = com.carriez.flutterHbb;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_STYLE = "non-global";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -579,9 +582,11 @@
 					"$(SDKROOT)/usr/lib/swift",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/",
 				);
+				RUSTDESK_IOS_CORE_LIBRARY = "$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a";
+				"RUSTDESK_IOS_CORE_LIBRARY[sdk=iphonesimulator*]" = "$(PROJECT_DIR)/../../target/aarch64-apple-ios-sim/release/liblibrustdesk.a";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(RUSTDESK_IOS_CORE_LIBRARY)",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",
@@ -634,7 +639,8 @@
 					"-framework",
 					"\"wakelock_plus\"",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.carriez.flutterHbb;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(RUSTDESK_IOS_APPLICATION_ID)";
+				RUSTDESK_IOS_APPLICATION_ID = com.carriez.flutterHbb;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_STYLE = "non-global";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -667,9 +673,11 @@
 					"$(SDKROOT)/usr/lib/swift",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/",
 				);
+				RUSTDESK_IOS_CORE_LIBRARY = "$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a";
+				"RUSTDESK_IOS_CORE_LIBRARY[sdk=iphonesimulator*]" = "$(PROJECT_DIR)/../../target/aarch64-apple-ios-sim/release/liblibrustdesk.a";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(RUSTDESK_IOS_CORE_LIBRARY)",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",
@@ -722,7 +730,8 @@
 					"-framework",
 					"\"wakelock_plus\"",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.carriez.flutterHbb;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(RUSTDESK_IOS_APPLICATION_ID)";
+				RUSTDESK_IOS_APPLICATION_ID = com.carriez.flutterHbb;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_STYLE = "non-global";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";

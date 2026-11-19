@@ -1,0 +1,107 @@
+name: Private native OHOS development build
+
+on:
+  push:
+    branches: ['codex/ohos-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-ohos-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VERSION: '1.5.14'
+  BUILD_NUMBER: '82'
+  MOBILE_APPLICATION_ID: 'io.github.akurtlualgtm.rustdesk'
+  VCPKG_COMMIT_ID: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
+
+jobs:
+  configuration:
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s .github/scripts -p 'test_mobile*.py' -v
+
+  native-arm64:
+    needs: configuration
+    runs-on: macos-15
+    timeout-minutes: 150
+    env:
+      RD_ID_SERVER: ${{ secrets.RD_ID_SERVER }}
+      RD_RELAY_SERVER: ${{ secrets.RD_RELAY_SERVER }}
+      RD_SERVER_PUBLIC_KEY: ${{ secrets.RD_SERVER_PUBLIC_KEY }}
+      RD_PRIVATE_API_SERVER: ${{ secrets.RD_PRIVATE_API_SERVER }}
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Validate native host and private inputs
+        run: |
+          test "$(uname -m)" = arm64
+          python3 .github/scripts/mobile_build_config.py
+          java_home=$(/usr/libexec/java_home -v 17)
+          xcrun lipo "$java_home/bin/java" -verify_arch arm64
+          echo "JAVA_HOME=$java_home" >> "$GITHUB_ENV"
+          echo "$java_home/bin" >> "$GITHUB_PATH"
+      - name: Install native build prerequisites
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        run: |
+          brew install autoconf autoconf-archive automake libtool nasm pkg-config
+          echo "$(brew --prefix libtool)/libexec/gnubin" >> "$GITHUB_PATH"
+      - name: Download and verify the pinned public SDK
+        run: |
+          sdk_dir="$RUNNER_TEMP/private-ohos-sdk"
+          mkdir -p "$sdk_dir/20" "$sdk_dir/archive"
+          python3 - "$sdk_dir/sdk.tar.gz" <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          import subprocess
+          import sys
+          config = json.loads(Path('res/ohos/toolchain.json').read_text())
+          archive = Path(sys.argv[1])
+          subprocess.run(['curl', '--fail', '--location', '--retry', '3',
+                          '--connect-timeout', '30', '--max-time', '1200',
+                          '--output', str(archive), config['sdk_url']], check=True)
+          with archive.open('rb') as stream:
+              digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+          if digest != config['sdk_sha256']:
+              raise ValueError('Public SDK digest mismatch')
+          print('Pinned public SDK checksum verified; API20 Beta1 development validation only.')
+          PY
+          tar -xzf "$sdk_dir/sdk.tar.gz" -C "$sdk_dir/archive"
+          for component in native ets js previewer toolchains; do
+            unzip -q "$sdk_dir/archive/sdk/packages/ohos-sdk/darwin/$component-darwin-arm64-6.0.0.47-Beta1.zip" -d "$sdk_dir/20"
+          done
+          echo "OHOS_SDK_ROOT=$sdk_dir/20" >> "$GITHUB_ENV"
+      - name: Prepare pinned local Hvigor tools
+        run: |
+          npm ci --prefix harmonyos/hvigor/npm --ignore-scripts --no-audit --no-fund \
+            --userconfig "$PWD/harmonyos/hvigor/npm/.npmrc" --cache "$RUNNER_TEMP/private-ohos-npm-cache"
+          echo "HVIGOR_NODE_MODULES=$PWD/harmonyos/hvigor/npm/node_modules" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: '1.81'
+          targets: aarch64-unknown-linux-ohos
+      - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+        with:
+          vcpkgDirectory: ${{ env.VCPKG_ROOT }}
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+      - name: Build and inspect real native controller HAP
+        run: bash .github/scripts/build_private_ohos.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: private-mobile-ohos-arm64-unsigned
+          path: mobile-output/*
+          if-no-files-found: error
