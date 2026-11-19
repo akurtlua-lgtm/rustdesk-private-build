@@ -1,8 +1,15 @@
+#if targetEnvironment(simulator)
+enum VideoCaptureAPI {
+    static let isAvailable = false
+}
+#else
 import Dispatch
 import ScreenCaptureKit
 
 @available(iOS 27.0, *)
 enum VideoCaptureAPI {
+    static let isAvailable = true
+
     static func makeStream(
         filter: SCContentFilter,
         output: any SCStreamOutput,
@@ -28,3 +35,4 @@ enum VideoCaptureAPI {
         picker.present()
     }
 }
+#endif
