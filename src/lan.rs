@@ -1,4 +1,4 @@
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 use hbb_common::whoami;
 use hbb_common::{
     allow_err,
@@ -23,7 +23,7 @@ use std::{
 
 type Message = RendezvousMessage;
 
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 pub(super) fn start_listening() -> ResultType<()> {
     let addr = SocketAddr::from(([0, 0, 0, 0], get_broadcast_port()));
     let socket = std::net::UdpSocket::bind(addr)?;
@@ -110,17 +110,17 @@ fn get_broadcast_port() -> u16 {
 }
 
 fn get_mac(_ip: &IpAddr) -> String {
-    #[cfg(not(target_os = "ios"))]
+    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
     if let Ok(mac) = get_mac_by_ip(_ip) {
         mac.to_string()
     } else {
         "".to_owned()
     }
-    #[cfg(target_os = "ios")]
+    #[cfg(any(target_os = "ios", target_env = "ohos"))]
     "".to_owned()
 }
 
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 fn get_mac_by_ip(ip: &IpAddr) -> ResultType<String> {
     for interface in default_net::get_interfaces() {
         match ip {
@@ -166,7 +166,7 @@ fn create_broadcast_sockets() -> Vec<UdpSocket> {
     // TODO: maybe we should use a better way to get ipv4 addresses.
     // But currently, it's ok to use `[Ipv4Addr::UNSPECIFIED]` for discovery.
     // `default_net::get_interfaces()` causes undefined symbols error when `flutter build` on iOS simulator x86_64
-    #[cfg(not(any(target_os = "ios")))]
+    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
     for interface in default_net::get_interfaces() {
         for ipv4 in &interface.ipv4 {
             ipv4s.push(ipv4.addr.clone());
@@ -194,14 +194,14 @@ fn send_query() -> ResultType<Vec<UdpSocket>> {
     let mut msg_out = Message::new();
     // We may not be able to get the mac address on mobile platforms.
     // So we need to use the id to avoid discovering ourselves.
-    #[cfg(any(target_os = "android", target_os = "ios"))]
+    #[cfg(any(target_os = "android", target_os = "ios", target_env = "ohos"))]
     let id = crate::ui_interface::get_id();
     // `crate::ui_interface::get_id()` will cause error:
     // `get_id()` uses async code with `current_thread`, which is not allowed in this context.
     //
     // No need to get id for desktop platforms.
     // We can use the mac address to identify the device.
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", target_os = "ios", target_env = "ohos")))]
     let id = "".to_owned();
     let peer = PeerDiscovery {
         cmd: "ping".to_owned(),

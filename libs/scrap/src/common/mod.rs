@@ -54,7 +54,7 @@ pub const STRIDE_ALIGN: usize = 64; // commonly used in libvpx vpx_img_alloc cal
 pub const HW_STRIDE_ALIGN: usize = 0; // recommended by av_frame_get_buffer
 
 pub mod aom;
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 pub mod camera;
 pub mod record;
 mod vpx;
@@ -133,7 +133,7 @@ pub fn would_block_if_equal(old: &mut Vec<u8>, b: &[u8]) -> std::io::Result<()> 
 
 pub trait TraitCapturer {
     // We doesn't support
-    #[cfg(not(any(target_os = "ios")))]
+    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
     fn frame<'a>(&'a mut self, timeout: std::time::Duration) -> std::io::Result<Frame<'a>>;
 
     #[cfg(windows)]
@@ -177,13 +177,13 @@ pub trait TraitPixelBuffer {
     fn pixfmt(&self) -> Pixfmt;
 }
 
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 pub enum Frame<'a> {
     PixelBuffer(PixelBuffer<'a>),
     Texture((*mut c_void, usize)),
 }
 
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 impl Frame<'_> {
     pub fn valid<'a>(&'a self) -> bool {
         match self {
