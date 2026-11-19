@@ -80,4 +80,31 @@ mod tests {
         assert!(rgb.raw[right] > 200 && rgb.raw[right + 2] < 50);
         inbox.close();
     }
+    #[test]
+    fn capture_source_requires_frame_and_closes_existing_capturers() {
+        use scrap::{begin_capture, Capturer, Display, TraitCapturer};
+        use std::{io::ErrorKind, sync::Arc, time::Duration};
+
+        let source = Arc::new(FrameInbox::default());
+        assert!(begin_capture(source.clone()).is_err());
+        assert!(Display::all().unwrap().is_empty());
+        source.publish_bgra(&[1; 8], 2, 1, 8).unwrap();
+        let lease = begin_capture(source.clone()).unwrap();
+        assert!(begin_capture(source.clone()).is_err());
+        let display = Display::primary().unwrap();
+        assert_eq!((display.width(), display.height()), (2, 1));
+        let mut capturer = Capturer::new(display).unwrap();
+        assert!(capturer.frame(Duration::ZERO).is_ok());
+        source.publish_bgra(&[2; 4], 1, 1, 4).unwrap();
+        assert!(capturer.frame(Duration::ZERO).is_err());
+        let mut resized = Capturer::new(Display::primary().unwrap()).unwrap();
+        assert!(resized.frame(Duration::ZERO).is_ok());
+        drop(lease);
+        assert!(Display::all().unwrap().is_empty());
+        assert_eq!(
+            capturer.frame(Duration::ZERO).err().unwrap().kind(),
+            ErrorKind::BrokenPipe
+        );
+        assert!(source.publish_bgra(&[3; 4], 1, 1, 4).is_err());
+    }
 }

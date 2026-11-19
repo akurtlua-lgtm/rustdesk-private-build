@@ -20,11 +20,6 @@ path = "src/naming.rs"
 name = "service"
 path = "src/service.rs"
 
-[[test]]
-name = "ios-capture-runtime-probe"
-path = "src/ios_capture_runtime_probe.rs"
-required-features = ["ios-host-link-probe", "mobile-view-only-host"]
-
 [features]
 inline = []
 use_samplerate = ["samplerate", "libsamplerate-sys"]

@@ -9,6 +9,11 @@ license = "MIT"
 authors = ["Ram <quadrupleslap@gmail.com>"]
 edition = "2018"
 
+[[test]]
+name = "ios-capture-runtime-probe"
+path = "tests/ios_capture_runtime_probe.rs"
+required-features = ["mobile-view-only-host"]
+
 [features]
 mobile-view-only-host = []
 wayland = ["gstreamer", "gstreamer-app", "gstreamer-video", "dbus", "tracing", "zbus"]
@@ -53,7 +58,7 @@ serde_json = "1.0"
 ndk = { version = "0.7", features = ["media"], optional = true}
 ndk-context = "0.1"
 
-[target.'cfg(not(target_os = "android"))'.dev-dependencies]
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dev-dependencies]
 repng = "0.2"
 docopt = "1.1"
 quest = "0.3"

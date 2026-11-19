@@ -48,6 +48,10 @@ pub mod mobile_frame;
 mod mobile_pixel_buffer;
 #[cfg(all(target_os = "ios", feature = "mobile-view-only-host"))]
 pub use self::mobile_pixel_buffer::PixelBuffer;
+#[cfg(all(target_os = "ios", feature = "mobile-view-only-host"))]
+mod mobile_capture;
+#[cfg(all(target_os = "ios", feature = "mobile-view-only-host"))]
+pub use self::mobile_capture::{begin_capture, CaptureLease, Capturer, Display};
 #[cfg(feature = "hwcodec")]
 pub mod hwcodec;
 #[cfg(feature = "mediacodec")]
@@ -138,8 +142,7 @@ pub fn would_block_if_equal(old: &mut Vec<u8>, b: &[u8]) -> std::io::Result<()> 
 }
 
 pub trait TraitCapturer {
-    // We doesn't support
-    #[cfg(not(any(target_os = "ios")))]
+    #[cfg(any(not(target_os = "ios"), feature = "mobile-view-only-host"))]
     fn frame<'a>(&'a mut self, timeout: std::time::Duration) -> std::io::Result<Frame<'a>>;
 
     #[cfg(windows)]
