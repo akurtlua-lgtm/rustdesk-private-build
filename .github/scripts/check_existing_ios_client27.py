@@ -58,7 +58,10 @@ def main():
         simctl('boot', udid)
     try:
         developer = os.environ.get('DEVELOPER_DIR') or command('xcode-select', '-p').strip()
-        command('open', '-a', str(Path(developer) / 'Applications/Simulator.app'), '--args', '-CurrentDeviceUDID', udid)
+        device_hub = Path(developer).parent / 'Applications/DeviceHub.app'
+        if not device_hub.is_dir():
+            raise RuntimeError('Xcode 27 Device Hub application unavailable')
+        command('open', '-a', str(device_hub))
         simctl('bootstatus', udid, '-b')
         simctl('install', udid, str(app))
         launched = simctl('launch', '--terminate-running-process', udid, APPLICATION_ID)
