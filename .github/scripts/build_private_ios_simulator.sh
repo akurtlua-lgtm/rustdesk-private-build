@@ -41,6 +41,7 @@ test -s target/aarch64-apple-ios-sim/release/liblibrustdesk.a
   cd flutter
   flutter pub get
   flutter build ios --simulator --debug --no-codesign --config-only \
+    --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true \
     --build-name "$VERSION" --build-number "$BUILD_NUMBER"
   cd ios
   pod install

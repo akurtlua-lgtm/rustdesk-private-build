@@ -90,7 +90,7 @@ jobs:
         run: |
           cd flutter
           flutter pub get
-          flutter test --no-pub test/floating_mouse_cursor_offset_test.dart
+          flutter test --no-pub --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true test/floating_mouse_cursor_offset_test.dart test/private_mobile_update_channel_test.dart
       - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
         with:
           vcpkgDirectory: ${{ env.VCPKG_ROOT }}
@@ -145,7 +145,7 @@ jobs:
         run: |
           cd flutter
           flutter pub get
-          flutter test --no-pub test/floating_mouse_cursor_offset_test.dart
+          flutter test --no-pub --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true test/floating_mouse_cursor_offset_test.dart test/private_mobile_update_channel_test.dart
       - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
         with:
           vcpkgDirectory: ${{ env.VCPKG_ROOT }}
