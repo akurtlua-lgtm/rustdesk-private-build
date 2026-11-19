@@ -11,6 +11,7 @@ import zipfile
 
 from smoke_ios_simulator import select_compatible_iphone, simctl
 from verify_mobile_artifacts import verify_ios
+from mobile_build_error import safe_diagnostics
 
 
 CLIENT_SOURCE = '5d8a17ba9c85f279b857ccface5843292c882de3'
@@ -21,7 +22,12 @@ APPLICATION_ID = 'io.github.akurtlualgtm.rustdesk'
 
 
 def command(*arguments):
-    return subprocess.check_output(arguments, text=True, stderr=subprocess.STDOUT, timeout=180)
+    try:
+        return subprocess.check_output(arguments, text=True, stderr=subprocess.STDOUT, timeout=180)
+    except subprocess.CalledProcessError as error:
+        diagnostic = '\n'.join('error: ' + line for line in error.output.splitlines())
+        print(safe_diagnostics(diagnostic, os.environ), flush=True)
+        raise
 
 
 def main():
@@ -51,7 +57,7 @@ def main():
     if device['state'] != 'Booted':
         simctl('boot', udid)
     try:
-        developer = command('xcode-select', '-p').strip()
+        developer = os.environ.get('DEVELOPER_DIR') or command('xcode-select', '-p').strip()
         command('open', '-a', str(Path(developer) / 'Applications/Simulator.app'), '--args', '-CurrentDeviceUDID', udid)
         simctl('bootstatus', udid, '-b')
         simctl('install', udid, str(app))
