@@ -48,7 +48,7 @@ jobs:
           test "$(uname -m)" = arm64
           python3 .github/scripts/mobile_build_config.py
           java_home=$(/usr/libexec/java_home -v 17)
-          file "$java_home/bin/java" | rg arm64
+          xcrun lipo "$java_home/bin/java" -verify_arch arm64
           echo "JAVA_HOME=$java_home" >> "$GITHUB_ENV"
           echo "$java_home/bin" >> "$GITHUB_PATH"
       - name: Install native build prerequisites
