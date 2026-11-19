@@ -873,7 +873,7 @@ async fn handle(data: Data, stream: &mut Connection) {
         Data::Close => {
             log::info!("Receive close message");
             if EXIT_RECV_CLOSE.load(Ordering::SeqCst) {
-                #[cfg(not(target_os = "android"))]
+                #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 crate::server::input_service::fix_key_down_timeout_at_exit();
                 if is_server() {
                     let _ = privacy_mode::turn_off_privacy(0, Some(PrivacyModeState::OffByPeer));
@@ -998,12 +998,19 @@ async fn handle(data: Data, stream: &mut Connection) {
                         None
                     };
                 } else if name == "hide_cm" {
+                    #[cfg(target_os = "ios")]
+                    {
+                        value = None;
+                    }
+                    #[cfg(not(target_os = "ios"))]
+                    {
                     value = if crate::hbbs_http::sync::is_pro() || crate::common::is_custom_client()
                     {
                         Some(hbb_common::password_security::hide_cm().to_string())
                     } else {
                         None
                     };
+                    }
                 } else if name == "voice-call-input" {
                     value = crate::audio_service::get_voice_call_input_device();
                 } else if name == "unlock-pin" {

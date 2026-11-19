@@ -26,6 +26,7 @@ use hbb_common::{
     ResultType, Stream,
 };
 use base::message_proto::*;
+#[cfg(not(target_os = "ios"))]
 use scrap::camera;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use service::ServiceTmpl;
@@ -71,6 +72,8 @@ pub mod input_service {
 }
 
 mod connection;
+#[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+pub(crate) mod mobile_host;
 mod login_failure_check;
 pub(crate) mod port_forward_mux;
 pub mod display_service;
@@ -228,12 +231,15 @@ pub async fn create_tcp_connection(
     };
     // Before the handshake, so its read is bounded too; lifted again at authorization.
     stream.set_max_packet_length(MAX_UNAUTHORIZED_MESSAGE);
+    #[cfg(not(target_os = "ios"))]
     tokio::select! {
         handshake = identity_handshake(&mut stream, secure) => handshake?,
         _ = unauthorized.evicted() => {
             bail!("evicted to make room for a newer unauthenticated connection");
         }
     }
+    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+    mobile_host::encrypted_handshake(&server, id, &mut stream, &unauthorized, secure).await?;
 
     #[cfg(target_os = "macos")]
     {
@@ -430,6 +436,7 @@ impl Server {
             || name.starts_with(VideoSource::Camera.service_name_prefix())
     }
 
+    #[cfg(not(target_os = "ios"))]
     pub fn try_add_primary_camera_service(&mut self) {
         if !camera::primary_camera_exists() {
             return;
@@ -444,6 +451,7 @@ impl Server {
         }
     }
 
+    #[cfg(not(target_os = "ios"))]
     pub fn try_add_monitor_service(&mut self, display_idx: usize) {
         let monitor_service_name =
             video_service::get_service_name(VideoSource::Monitor, display_idx);
@@ -455,6 +463,7 @@ impl Server {
         }
     }
 
+    #[cfg(not(target_os = "ios"))]
     pub fn add_camera_connection(&mut self, conn: ConnInner) {
         if camera::primary_camera_exists() {
             let primary_camera_name =
@@ -645,7 +654,7 @@ pub fn check_zombie() {
 /// * `is_server` - Whether the current client is definitely the server.
 /// If true, the server will be started.
 /// Otherwise, client will check if there's already a server and start one if not.
-#[cfg(any(target_os = "android", target_os = "ios"))]
+#[cfg(target_os = "android")]
 #[tokio::main]
 pub async fn start_server(_is_server: bool) {
     allow_err!(crate::trusted_devices::initialize());

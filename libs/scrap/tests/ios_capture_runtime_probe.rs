@@ -106,5 +106,11 @@ mod tests {
             ErrorKind::BrokenPipe
         );
         assert!(source.publish_bgra(&[3; 4], 1, 1, 4).is_err());
+        let next = Arc::new(FrameInbox::default());
+        next.publish_bgra(&[4; 4], 1, 1, 4).unwrap();
+        let _next_lease = begin_capture(next.clone()).unwrap();
+        assert!(Display::from_source(source).is_err());
+        let mut next_capturer = Capturer::new(Display::from_source(next).unwrap()).unwrap();
+        assert!(next_capturer.frame(Duration::ZERO).is_ok());
     }
 }

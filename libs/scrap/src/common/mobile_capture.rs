@@ -52,6 +52,13 @@ pub struct Display {
 }
 
 impl Display {
+    pub fn from_source(source: Arc<FrameInbox>) -> io::Result<Self> {
+        let dimensions = source.dimensions().ok_or_else(|| {
+            io::Error::new(io::ErrorKind::BrokenPipe, "Capture source is unavailable")
+        })?;
+        Ok(Self { source, dimensions })
+    }
+
     pub fn all() -> io::Result<Vec<Self>> {
         let source = SOURCE.lock().unwrap().as_ref().and_then(Weak::upgrade);
         let Some(source) = source else {

@@ -48,16 +48,43 @@ def main():
         if result.returncode or not re.search(r'test result: ok\. 2 passed; 0 failed;', output):
             print(safe_diagnostics('error: ' + output.replace('\n', '\nerror: '), environment))
             raise RuntimeError('Native iOS CPU media/crypto probe did not pass exactly two tests')
+        host_command = ['cargo', 'test', '--locked', '--release', '--lib',
+                        '--target', 'aarch64-apple-ios-sim', '--features',
+                        'flutter,ios-host-link-probe,mobile-view-only-host,ios-hostcore-compile-probe']
+        host_compile = Path(os.environ['RUNNER_TEMP']) / 'ios-host-loopback-compile.log'
+        print('Linking root library tests for the real encrypted host loopback.', flush=True)
+        try:
+            with host_compile.open('w') as stream:
+                subprocess.run(host_command + ['--no-run'], env=environment, stdout=stream,
+                               stderr=subprocess.STDOUT, timeout=5400, check=True)
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            print(safe_diagnostics('error: ' + host_compile.read_text(errors='replace').replace('\n', '\nerror: '), environment))
+            raise RuntimeError('Root iOS host tests did not link; no loopback pass claimed') from None
+        host_log = Path(os.environ['RUNNER_TEMP']) / 'ios-host-loopback.log'
+        try:
+            with host_log.open('w') as stream:
+                host_result = subprocess.run(host_command + ['--', 'client::mobile_host_tests::',
+                                            '--test-threads=1', '--nocapture'], env=environment,
+                                            stdout=stream, stderr=subprocess.STDOUT, timeout=180)
+        except subprocess.TimeoutExpired:
+            print(safe_diagnostics('error: ' + host_log.read_text(errors='replace').replace('\n', '\nerror: '), environment))
+            raise RuntimeError('Real iOS host loopback timed out; no passing record') from None
+        host_output = host_log.read_text(errors='replace')
+        if host_result.returncode or not re.search(r'test result: ok\. 2 passed; 0 failed;', host_output):
+            print(safe_diagnostics('error: ' + host_output.replace('\n', '\nerror: '), environment))
+            raise RuntimeError('Real iOS host loopback did not pass exactly two tests')
         source = os.environ['GITHUB_SHA']
         if not re.fullmatch('[a-f0-9]{40}', source):
             raise ValueError('Full source SHA required')
         record = dict(source=source, run_id=os.environ['GITHUB_RUN_ID'], sdk=sdk,
                       target='aarch64-apple-ios-sim', tests=2, result='passed',
                       synthetic_bgra_vp8_box_decode_executed=True,
+                      host_loopback_tests=2, real_encrypted_host_loopback=True,
+                      device_password_totp_read_only_and_scope_revocation=True,
                       system_screen_capture_tested=False, remote_session_tested=False,
                       broadcast_extension_started=False, physical_device_tested=False)
         Path('probe-output/ios-cpu-media-probe.json').write_text(json.dumps(record, indent=2) + '\n')
-        print('Two real iOS simulator CPU media and capture lifecycle tests passed; synthetic pixels only, no screen capture or network session.')
+        print('Two media tests and two real encrypted TCP host loopback tests passed; synthetic pixels and isolated test configuration, no system capture or physical device.')
     finally:
         simctl('shutdown', udid)
 
