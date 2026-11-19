@@ -22,6 +22,9 @@ config['overlay-triplets'] = [str(root / 'res/vcpkg-triplets')]
 PY
 "$VCPKG_ROOT/vcpkg" install --triplet arm64-ios-simulator \
   --x-manifest-root="$manifest_dir" --x-install-root="$VCPKG_ROOT/installed"
+# The locked magnum-opus build script derives arm64-ios and ignores VCPKG_TARGET_TRIPLET.
+test ! -e "$VCPKG_ROOT/installed/arm64-ios"
+ln -s arm64-ios-simulator "$VCPKG_ROOT/installed/arm64-ios"
 export VCPKG_TARGET_TRIPLET=arm64-ios-simulator
 export SODIUM_USE_PKG_CONFIG=1
 export LIBSODIUM_STATIC=1
