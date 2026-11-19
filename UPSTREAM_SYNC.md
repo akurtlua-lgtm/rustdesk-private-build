@@ -90,3 +90,14 @@ Linux验证环境补充：首次候选中的Rust测试源码已编译，但旧Ub
 仅把d1d497f、b633360、54416dc三个单提交记录为区间外已完成集成；9854296仅已有28份README完成，缺失docs/README-KA.md仍依赖未集成a7468d0，fully_integrated=false并保留pending。原有3e953e8记录及连续integrated_commit=d46c7c52521a311d3ada8eeacd4f13b94e321258保持，剩余25项待验证；不得把整个区间或该文档整提交标为完成。PR #3旧剪贴板空文件风险和待验证授权补丁均未纳入本版。
 
 回归面仍限于src/server/uinput.rs的相对移动、libs/scrap/src/wayland/pipewire.rs的未匹配流保留，以及src/common.rs、src/flutter_ffi.rs和Mac src/service.rs入口的提前初始化薄调用；libs/scrap/src/common/mod.rs仅测试类型重导出。其余既有文件只改一致版本、README链接、测试门禁和本记录。权限、严格Key、设备授权/E2E、账号边界、Mac定制、Secrets/关闭指纹及确认式签名升级保持。未在本机执行Intel组件，未改服务器、后台、密钥、防火墙、代理或本机应用/权限。真实KDE/物理uinput、实际daemon安装启动和跨版本安装重启未实测，Ubuntu22原生验证不宣称Ubuntu18运行时ABI已验收，Mac仍未公证。
+
+
+## 待验证候选：1.5.13（构建81）
+
+仅适配2026-11-19观察到的上游669cb8ac62aa20d3626395877d7dd0357aec7ed2：新增可选内置hide-account-password-login开关。自建客户端保持未配置，不启用Y，既有账号密码登录、注册审核、设备记录隔离及rdoss_v1_信令过滤保持。该开关只隐藏客户端UI，不宣称禁用后台密码认证或实现原生远控账号ACL；OIDC-only加载/空provider提示只在显式Y时出现，设备端授权/严格Key/E2E不变。
+
+回归面仅flutter/lib/common/widgets/login.dart的条件显示、焦点和提交入口；flutter/lib/consts.dart与libs/base/src/config/keys.rs仅新增对应内置键。54份语言文件只追加新键以解决旧尾部上下文冲突，不修改旧翻译；it.rs按维护者规则留空，意大利语译文范围不称为已采用。未引入其他待集成翻译、README、剪贴板或移动端改动；d40e1da715fa1694ff4712f394b81a6df6bcd612移动端鼠标补丁仍在范围外。子模块、生产依赖和现有私有原生/七包/主分支签名发布门禁不变，工作流仅同步版本。
+
+保留上游4项并补充2项无OIDC的OSS实际账号密码提交回归（未配置时点击Login、N时按Enter），核对/api/login请求及后台审核中错误提示；不宣称实际后台注册审核已实测。上游控件测试覆盖未配置/N/Y登录字段和回车提交入口、OIDC按钮，以及隐藏模式首帧加载和空provider状态。本机使用现有Flutter3.44.9与仓库既有临时ARM兼容补丁、正式构建生成桥接执行通过；临时主题/依赖改动已恢复，不提交、不运行codegen。未应用既有兼容补丁时的本地SDK编译失败不能称为feature回归通过；完整候选仍须验证工作流固定SDK及四平台原生、七包和实际日志。候选通过前不进main，正式九任务/七包/独立签名核验后才更新集成记录。
+
+保留开源服务端和独立账号后台、现有权限及Mac功能、Secrets/noreply、关闭指纹和下载/安装分别确认的签名升级。没有修改服务器、账号后台、密钥、防火墙、代理、本机应用/权限或新增Android/iOS/Web构建。

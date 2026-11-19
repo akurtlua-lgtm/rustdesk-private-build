@@ -828,5 +828,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Forever", "For alltid"),
         ("Previous desktop / full-screen app", ""),
         ("Next desktop / full-screen app", ""),
+        ("username-login-disabled-oidc-unavailable", "Innlogging med brukernavn og passord er deaktivert, og ingen OIDC-innloggingsmetoder er tilgjengelige."),
     ].iter().cloned().collect();
 }

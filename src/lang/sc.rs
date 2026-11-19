@@ -828,5 +828,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Forever", "Pro semper"),
         ("Previous desktop / full-screen app", ""),
         ("Next desktop / full-screen app", ""),
+        ("username-login-disabled-oidc-unavailable", "S'atzessu cun su nùmene utente e sa crae est disabilitadu, e non b'at perunu mètodu de atzessu OIDC a disponimentu."),
     ].iter().cloned().collect();
 }
