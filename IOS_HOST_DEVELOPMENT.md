@@ -33,3 +33,8 @@
 第三轮run44479396314双SDK扩展链接通过，但模拟器CPU测试命令在20分钟编译截止时仍有rustc进程，被正确标记失败，没有测试通过记录。下一轮先cargo test --no-run在独立编译预算内完成，再用相同配置实际执行两项测试、180秒运行截止；不移除任何断言、feature或真实目标运行，编译/运行失败均输出仅有界脱敏诊断，不能以编译完成冒充运行通过。
 
 最小化复查发现CPU/缓冲测试只使用scrap、base与hbb_common，不使用根应用。Cargo官方说明根包integration test会顺带构建该包所有binary；根测试目标因此会带入无关桌面程序。现移除本PR先前新增的根[[test]]，把同源码/断言移到scrap/tests并用-p scrap执行，不新建测试包或依赖。scrap旧dev-dependencies中的桌面quest/docopt/repng仅对原有Android之外再排除iOS；正常生产依赖不变，其他平台测试声明保持，避免新iOS测试引入桌面GL工具。Root真正双SDK扩展链接仍照常执行，不用采集库测试冒充Root host运行。https://doc.rust-lang.org/cargo/commands/cargo-test.html
+
+
+### 原生主库真实连接回归候选
+
+新增两个仅 iOS/实验 feature 的 client 子模块测试，通过真实 Client::secure_connection 与 server::create_tcp_connection 在回环 TCP 上验证签名身份、加密、设备密码和 TOTP、八项关闭权限、真实 VP8 帧、非法输入拒绝及释放 ScopedHost 后 socket EOF；另测显式不加密、握手回退明文和停在握手时撤销。配置在任何 Config getter 或连接前重定向到新临时目录，仅执行该模块且单线程，不启动 Flutter 初始化或触及本机配置。Root --lib 首先实际编译/链接，再单独计时运行；未经 SDK CI 成功不记录通过。该测试不等于实际系统采集、远端设备连接、后台共享或真机验证。只有释放 ScopedHost 触发停止信号；单独释放或关闭外部 FrameInbox 不代表立即关闭 socket。

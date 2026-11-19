@@ -1,4 +1,4 @@
-use super::{raii, Connection, Message, Permission};
+use super::{raii, Connection, Message, Permission, Subscriber};
 use base::mobile_host_stop::StopReceiver;
 use std::net::SocketAddr;
 

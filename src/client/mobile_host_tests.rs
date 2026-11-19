@@ -1,0 +1,273 @@
+use super::*;
+use base::message_proto::{
+    login_response, misc, option_message, supported_decoding, Auth2FA, KeyEvent, OptionMessage,
+    SupportedDecoding,
+};
+use hbb_common::{
+    config::{APP_DIR, APP_HOME_DIR},
+    sha2::{Digest, Sha256},
+    tcp::FramedStream,
+};
+use std::sync::{Arc, Once};
+
+const PASSWORD: &str = "synthetic-mobile-test-password";
+static CONFIG: Once = Once::new();
+
+fn initialize() {
+    CONFIG.call_once(|| {
+        let directory =
+            std::env::temp_dir().join(format!("rd-mobile-host-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&directory).unwrap();
+        *APP_DIR.write().unwrap() = directory.to_str().unwrap().to_owned();
+        *APP_HOME_DIR.write().unwrap() = directory.to_str().unwrap().to_owned();
+        crate::common::init_sodium();
+        Config::set_id("123456789");
+        Config::set_option(
+            "verification-method".into(),
+            "use-permanent-password".into(),
+        );
+        Config::set_option("approve-mode".into(), "password".into());
+        assert!(Config::set_permanent_password(PASSWORD));
+        let info = crate::auth_2fa::TOTPInfo {
+            name: "synthetic-mobile-host".into(),
+            secret: vec![17; 20],
+            digits: 6,
+            created_at: 0,
+        };
+        Config::set_option("2fa".into(), info.into_string().unwrap());
+    });
+}
+
+fn scope() -> crate::server::mobile_host::ScopedHost {
+    let inbox = Arc::new(scrap::mobile_frame::FrameInbox::default());
+    inbox
+        .publish_bgra(&vec![128; 128 * 96 * 4], 128, 96, 128 * 4)
+        .unwrap();
+    crate::server::mobile_host::prepare(inbox).unwrap()
+}
+
+async fn incoming(
+    scope: &crate::server::mobile_host::ScopedHost,
+    secure: bool,
+) -> (Stream, tokio::task::JoinHandle<ResultType<()>>) {
+    let listener = hbb_common::tcp::new_listener("127.0.0.1:0", false)
+        .await
+        .unwrap();
+    let mut controller = connect_tcp(listener.local_addr().unwrap().to_string(), 3000)
+        .await
+        .unwrap();
+    controller.set_send_timeout(3000);
+    let (accepted, address) = listener.accept().await.unwrap();
+    let server = scope.server();
+    let task = tokio::spawn(crate::server::create_tcp_connection(
+        server,
+        Stream::Tcp(FramedStream::from(accepted, address)),
+        address,
+        secure,
+        Default::default(),
+    ));
+    (controller, task)
+}
+
+async fn read(stream: &mut Stream) -> Message {
+    let bytes = timeout(5000, stream.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    Message::parse_from_bytes(&bytes).unwrap()
+}
+
+async fn closed(stream: &mut Stream) {
+    timeout(5000, async {
+        while let Some(result) = stream.next().await {
+            assert!(
+                result.is_ok(),
+                "socket must reach EOF without a framing/decryption error"
+            );
+        }
+    })
+    .await
+    .expect("capture scope must close the live socket");
+}
+
+async fn encrypted(stream: &mut Stream) {
+    let (hub_pk, hub_sk) = sign::gen_keypair();
+    let signed = sign::sign(
+        &IdPk {
+            id: Config::get_id(),
+            pk: Config::get_key_pair().1.into(),
+            ..Default::default()
+        }
+        .write_to_bytes()
+        .unwrap(),
+        &hub_sk,
+    );
+    let key = Client::secure_connection(
+        &Config::get_id(),
+        signed,
+        &crate::encode64(hub_pk.0),
+        stream,
+    )
+    .await
+    .unwrap();
+    assert_eq!(key, Some(Config::get_key_pair().1));
+    assert!(stream.is_secured());
+}
+
+async fn login_response(stream: &mut Stream) -> (login_response::Union, usize) {
+    let mut permissions = std::collections::BTreeSet::new();
+    timeout(5000, async {
+        loop {
+            let message = read(stream).await;
+            match message.union {
+                Some(message::Union::LoginResponse(response)) => {
+                    return (response.union.unwrap(), permissions.len())
+                }
+                Some(message::Union::Misc(value)) => {
+                    if let Some(misc::Union::PermissionInfo(permission)) = value.union {
+                        assert!(!permission.enabled);
+                        permissions.insert(permission.permission.value());
+                    }
+                }
+                _ => {}
+            }
+        }
+    })
+    .await
+    .unwrap()
+}
+
+async fn login(stream: &mut Stream, session: u64) {
+    let hash = loop {
+        if let Some(message::Union::Hash(hash)) = read(stream).await.union {
+            break hash;
+        }
+    };
+    let mut first = Sha256::new();
+    first.update(PASSWORD);
+    first.update(hash.salt.as_bytes());
+    let mut second = Sha256::new();
+    second.update(first.finalize());
+    second.update(hash.challenge.as_bytes());
+    let mut request = Message::new();
+    request.set_login_request(LoginRequest {
+        username: Config::get_id(),
+        password: second.finalize().to_vec().into(),
+        my_id: format!("synthetic-controller-{session}"),
+        my_name: "synthetic-controller".into(),
+        version: crate::VERSION.into(),
+        my_platform: "Windows".into(),
+        session_id: session,
+        option: Some(OptionMessage {
+            supported_decoding: Some(SupportedDecoding {
+                ability_vp8: 1,
+                prefer: supported_decoding::PreferCodec::VP8.into(),
+                ..Default::default()
+            })
+            .into(),
+            disable_audio: option_message::BoolOption::Yes.into(),
+            ..Default::default()
+        })
+        .into(),
+        ..Default::default()
+    });
+    stream.send(&request).await.unwrap();
+    let (response, permissions) = login_response(stream).await;
+    assert_eq!(permissions, 8);
+    assert!(matches!(response, login_response::Union::Error(error) if error == REQUIRE_2FA));
+    let totp = crate::auth_2fa::TOTPInfo::from_str(&Config::get_option("2fa")).unwrap();
+    let mut response = Message::new();
+    response.set_auth_2fa(Auth2FA {
+        code: totp.generate_current().unwrap(),
+        trust_this_device: false,
+        ..Default::default()
+    });
+    stream.send(&response).await.unwrap();
+    let (response, _) = login_response(stream).await;
+    let login_response::Union::PeerInfo(peer) = response else {
+        panic!("encrypted password and TOTP login must authorize");
+    };
+    assert_eq!(peer.platform, "iOS");
+    assert_eq!(peer.displays.len(), 1);
+    assert_eq!((peer.displays[0].width, peer.displays[0].height), (128, 96));
+}
+
+#[tokio::test]
+async fn encrypted_password_totp_read_only_and_scope_revocation() {
+    initialize();
+    let scope = scope();
+    let (mut rejected, rejected_task) = incoming(&scope, true).await;
+    encrypted(&mut rejected).await;
+    login(&mut rejected, 101).await;
+    timeout(5000, async {
+        loop {
+            if let Some(message::Union::VideoFrame(frame)) = read(&mut rejected).await.union {
+                assert!(matches!(frame.union, Some(base::message_proto::video_frame::Union::Vp8s(frames)) if !frames.frames.is_empty()));
+                break;
+            }
+        }
+    }).await.unwrap();
+    let mut key = Message::new();
+    key.set_key_event(KeyEvent::new());
+    rejected.send(&key).await.unwrap();
+    closed(&mut rejected).await;
+    timeout(5000, rejected_task)
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    let (mut active, active_task) = incoming(&scope, true).await;
+    encrypted(&mut active).await;
+    login(&mut active, 102).await;
+    let mut ping = Message::new();
+    ping.set_test_delay(TestDelay {
+        time: 5151,
+        from_client: true,
+        ..Default::default()
+    });
+    active.send(&ping).await.unwrap();
+    timeout(5000, async {
+        loop {
+            if let Some(message::Union::TestDelay(delay)) = read(&mut active).await.union {
+                if delay.from_client && delay.time == 5151 {
+                    break;
+                }
+            }
+        }
+    })
+    .await
+    .unwrap();
+    drop(scope);
+    closed(&mut active).await;
+    timeout(5000, active_task).await.unwrap().unwrap().unwrap();
+}
+
+#[tokio::test]
+async fn plaintext_refused_and_stalled_handshake_revoked() {
+    initialize();
+    let scope = scope();
+    let (mut plaintext, task) = incoming(&scope, false).await;
+    assert!(timeout(5000, task).await.unwrap().unwrap().is_err());
+    closed(&mut plaintext).await;
+    let (mut fallback, fallback_task) = incoming(&scope, true).await;
+    assert!(matches!(
+        read(&mut fallback).await.union,
+        Some(message::Union::SignedId(_))
+    ));
+    fallback.send(&Message::new()).await.unwrap();
+    assert!(timeout(5000, fallback_task)
+        .await
+        .unwrap()
+        .unwrap()
+        .is_err());
+    closed(&mut fallback).await;
+    let (mut stalled, task) = incoming(&scope, true).await;
+    assert!(matches!(
+        read(&mut stalled).await.union,
+        Some(message::Union::SignedId(_))
+    ));
+    drop(scope);
+    assert!(timeout(5000, task).await.unwrap().unwrap().is_err());
+    closed(&mut stalled).await;
+}
