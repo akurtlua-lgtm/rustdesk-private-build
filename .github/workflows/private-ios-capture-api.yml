@@ -1,0 +1,97 @@
+name: Private iOS 27 capture API compatibility
+
+on:
+  push:
+    branches: ['codex/ios-capture-api-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screen-capture-api:
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-capture-api-')
+    runs-on: xcode-27
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Verify device APIs and the simulator unsupported capability without recording
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          mkdir -p capture-api-output
+          for sdk in iphoneos iphonesimulator; do
+            version=$(xcrun --sdk "$sdk" --show-sdk-version)
+            test "${version%%.*}" = 27
+            sdk_path=$(xcrun --sdk "$sdk" --show-sdk-path)
+            target=arm64-apple-ios27.0
+            if [[ "$sdk" == iphonesimulator ]]; then
+              target=arm64-apple-ios27.0-simulator
+              printf 'import ScreenCaptureKit\n' > "$RUNNER_TEMP/sck-import.swift"
+              if xcrun --sdk "$sdk" swiftc -target "$target" -sdk "$sdk_path" -typecheck \
+                "$RUNNER_TEMP/sck-import.swift" > "$RUNNER_TEMP/sck-import.log" 2>&1; then
+                echo 'Simulator SDK now supports SCK; review capability implementation before proceeding.' >&2
+                exit 1
+              fi
+              grep -F "no such module 'ScreenCaptureKit'" "$RUNNER_TEMP/sck-import.log"
+            fi
+            xcrun --sdk "$sdk" swiftc -swift-version 6 -warnings-as-errors \
+              -target "$target" -sdk "$sdk_path" -typecheck \
+              res/ios27-capture/VideoCaptureAPI.swift
+            printf '%s %s ARM64 Swift6 target typecheck passed\n' "$sdk" "$version" >> capture-api-output/SDK_CHECKS.txt
+          done
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          source = os.environ['GITHUB_SHA']
+          if not re.fullmatch('[a-f0-9]{40}', source):
+              raise ValueError('Full source SHA required')
+          record = dict(source=source, run_id=os.environ['GITHUB_RUN_ID'],
+                        xcode=subprocess.check_output(['xcodebuild', '-version'], text=True).strip(),
+                        both_target_typechecks_passed=True, architecture='arm64',
+                        device_screen_capture_api_checked=True,
+                        simulator_screen_capture_api_available=False,
+                        simulator_unsupported_capability_checked=True,
+                        capture_executed=False, picker_presented=False,
+                        remote_session_tested=False, physical_device_tested=False,
+                        installable=False, signed=False)
+          Path('capture-api-output/verification.json').write_text(json.dumps(record, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios27-screen-capture-api-check
+          path: capture-api-output/*
+          if-no-files-found: error
+
+  existing-controller-on-ios27:
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-capture-api-')
+    runs-on: xcode-27
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Require an actual ARM64 simulator host
+        run: test "$(uname -m)" = arm64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: 44475602661
+          name: private-mobile-ios-simulator-arm64
+          path: verified-client-input
+      - name: Verify immutable controller fixture and install it on the current simulator
+        run: python3 .github/scripts/check_existing_ios_client27.py
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios27-existing-controller-startup-check
+          path: client-compat-output/verification.json
+          if-no-files-found: error
