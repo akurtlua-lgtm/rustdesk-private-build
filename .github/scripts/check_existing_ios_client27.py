@@ -14,10 +14,10 @@ from verify_mobile_artifacts import verify_ios
 from mobile_build_error import safe_diagnostics
 
 
-CLIENT_SOURCE = '5d8a17ba9c85f279b857ccface5843292c882de3'
-CLIENT_RUN = '44475602661'
+CLIENT_SOURCE = '8373fa77f8a662edb15b73c5cf4eca9faee04c08'
+CLIENT_RUN = '44514425331'
 PAYLOAD_NAME = 'rustdesk-1.5.14-ios-simulator-arm64.app.zip'
-PAYLOAD_SHA256 = '9092f35fdeceec1cab89de0f3630270dd2723b2b6b71548fa62cefa68a8a1c87'
+PAYLOAD_SHA256 = '1b1e858f8c6a28f7e6787a90cb6a206b6d05e0034e99a24874629bf98889443e'
 APPLICATION_ID = 'io.github.akurtlualgtm.rustdesk'
 
 
@@ -35,7 +35,7 @@ def main():
     metadata = json.loads(payload.with_name('ios-simulator-build.json').read_text())
     expected = dict(source=CLIENT_SOURCE, run_id=CLIENT_RUN, artifact=PAYLOAD_NAME,
                     application_id=APPLICATION_ID, version='1.5.14', build_number='82',
-                    platform='ios-simulator', architecture='arm64', size=64007163,
+                    platform='ios-simulator', architecture='arm64', size=64007170,
                     sha256=PAYLOAD_SHA256)
     if any(metadata.get(key) != value for key, value in expected.items()):
         raise ValueError('Controller fixture identity/source mismatch')
