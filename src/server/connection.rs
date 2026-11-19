@@ -367,6 +367,8 @@ pub struct Connection {
     display_idx: usize,
     stream: super::Stream,
     server: super::ServerPtrWeak,
+    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+    capture_source: Arc<scrap::mobile_frame::FrameInbox>,
     hash: Hash,
     read_jobs: Vec<fs::TransferJob>,
     timer: crate::RustDeskInterval,
@@ -569,6 +571,10 @@ impl Connection {
         let Some(mut hbbs_rx) = super::mobile_host::stop_receiver(&server, id) else {
             return;
         };
+        #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+        let Some(capture_source) = super::mobile_host::source_for(&server) else {
+            return;
+        };
         let (tx_post_seq, rx_post_seq) = mpsc::unbounded_channel();
         tokio::spawn(async move {
             Self::post_seq_loop(rx_post_seq).await;
@@ -590,6 +596,8 @@ impl Connection {
             display_idx: 0,
             stream,
             server,
+            #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+            capture_source,
             hash,
             read_jobs: Vec::new(),
             timer: crate::rustdesk_interval(time::interval(SEC30)),
@@ -2329,7 +2337,13 @@ impl Connection {
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 let _h = try_start_record_cursor_pos();
                 self.auto_disconnect_timer = Self::get_auto_disconenct_timer();
+                #[cfg(not(target_os = "ios"))]
                 s.try_add_monitor_service(self.display_idx);
+                #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                if let Err(error) = self.add_mobile_monitor_service(&mut s) {
+                    log::trace!("Capture source unavailable: {error}");
+                    return;
+                }
                 s.add_monitor_connection(self.inner.clone(), &noperms, self.display_idx);
             }
         }
@@ -4722,10 +4736,16 @@ impl Connection {
             video_service::get_service_name(self.video_source(), self.display_idx);
         let mut lock = server.write().unwrap();
         if !lock.contains(&new_service_name) {
+            #[cfg(not(target_os = "ios"))]
             lock.add_service(Box::new(video_service::new(
                 self.video_source(),
                 display_idx,
             )));
+            #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+            if let Err(error) = self.add_mobile_monitor_service(&mut lock) {
+                log::trace!("Capture source unavailable: {error}");
+                return false;
+            }
         }
         // For versions greater than 1.2.4, a `CaptureDisplays` message will be sent immediately.
         // Unnecessary capturers will be removed then.
@@ -4801,13 +4821,25 @@ impl Connection {
             for display in valid_add.iter() {
                 let service_name = video_service::get_service_name(video_source, *display);
                 if !lock.contains(&service_name) {
+                    #[cfg(not(target_os = "ios"))]
                     lock.add_service(Box::new(video_service::new(video_source, *display)));
+                    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                    if let Err(error) = self.add_mobile_monitor_service(&mut lock) {
+                        log::trace!("Capture source unavailable: {error}");
+                        return;
+                    }
                 }
             }
             for display in valid_set.iter() {
                 let service_name = video_service::get_service_name(video_source, *display);
                 if !lock.contains(&service_name) {
+                    #[cfg(not(target_os = "ios"))]
                     lock.add_service(Box::new(video_service::new(video_source, *display)));
+                    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                    if let Err(error) = self.add_mobile_monitor_service(&mut lock) {
+                        log::trace!("Capture source unavailable: {error}");
+                        return;
+                    }
                 }
             }
             if !add.is_empty() {

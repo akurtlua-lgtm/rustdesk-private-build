@@ -63,7 +63,7 @@ jobs:
   host-core-compile:
     needs: [generate-bridge, capture-buffer-tests, view-only-policy-tests]
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       matrix:
@@ -111,5 +111,10 @@ jobs:
           vcpkgDirectory: ${{ env.VCPKG_ROOT }}
           vcpkgGitCommitId: 9e593bb18ea69cc5095e012465dcd675a822ed0d
           doNotCache: false
-      - name: Typecheck existing host modules without starting them
+      - name: Typecheck host modules and execute synthetic media and source-isolation tests
         run: bash .github/scripts/check_ios_hostcore.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios-hostcore-synthetic-capture-tests
+          path: probe-output/ios-cpu-media-probe.json
+          if-no-files-found: error

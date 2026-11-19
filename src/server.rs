@@ -448,6 +448,7 @@ impl Server {
         }
     }
 
+    #[cfg(not(target_os = "ios"))]
     pub fn try_add_monitor_service(&mut self, display_idx: usize) {
         let monitor_service_name =
             video_service::get_service_name(VideoSource::Monitor, display_idx);

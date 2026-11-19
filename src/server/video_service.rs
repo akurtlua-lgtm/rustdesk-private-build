@@ -277,6 +277,8 @@ pub struct VideoService {
     sp: GenericService,
     idx: usize,
     source: VideoSource,
+    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+    capture_source: Arc<scrap::mobile_frame::FrameInbox>,
     #[cfg(windows)]
     dxgi_recovery_state: Arc<Mutex<DxgiRecoveryState>>,
 }
@@ -299,6 +301,10 @@ pub fn get_service_name(source: VideoSource, idx: usize) -> String {
     format!("{}{}", source.service_name_prefix(), idx)
 }
 
+#[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+pub(super) mod mobile_view_only;
+
+#[cfg(not(target_os = "ios"))]
 pub fn new(source: VideoSource, idx: usize) -> GenericService {
     let _ = FRAME_FETCHED_NOTIFIERS
         .lock()
@@ -635,7 +641,10 @@ fn run(vs: VideoService) -> ResultType<()> {
     #[cfg(windows)]
     let dxgi_recovery_state = vs.dxgi_recovery_state.clone();
     let sp = vs.sp;
+    #[cfg(not(target_os = "ios"))]
     let mut c = get_capturer(vs.source, display_idx, last_portable_service_running)?;
+    #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+    let mut c = mobile_view_only::get_capturer(vs.capture_source)?;
     #[cfg(windows)]
     // ACCESS_LOST marks the next successful capturer creation as a recovery. This timestamp is
     // consumed once and temporarily holds off the normal WouldBlock-to-GDI fallback, giving the

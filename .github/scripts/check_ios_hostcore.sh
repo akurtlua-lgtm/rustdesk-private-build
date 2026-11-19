@@ -40,3 +40,6 @@ else
   export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios="--target=arm64-apple-ios15.0 -isysroot \"$sdk\""
 fi
 cargo check --locked --release --lib --target "$PROBE_TARGET" --features flutter,ios-host-link-probe,mobile-view-only-host,ios-hostcore-compile-probe
+if [[ "$PROBE_SDK" == iphonesimulator ]]; then
+  python3 .github/scripts/run_ios_capture_probe.py
+fi
