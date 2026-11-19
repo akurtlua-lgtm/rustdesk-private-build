@@ -49,7 +49,7 @@ use std::{
 
 /// Default maximum number of files allowed per transfer request.
 /// Unit: number of files (not bytes).
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
 const DEFAULT_MAX_VALIDATED_FILES: usize = 10_000;
 
 /// Maximum number of files allowed in a single file transfer request.
@@ -63,7 +63,7 @@ const DEFAULT_MAX_VALIDATED_FILES: usize = 10_000;
 /// Unit: number of files (not bytes).
 /// Default: 10,000 files.
 /// Configured via: `OPTION_FILE_TRANSFER_MAX_FILES` ("file-transfer-max-files")
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
 static MAX_VALIDATED_FILES: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
 
 /// Get the maximum number of files allowed per transfer request.
@@ -77,7 +77,7 @@ static MAX_VALIDATED_FILES: std::sync::OnceLock<usize> = std::sync::OnceLock::ne
 ///   (Note: negative values are not valid for `usize` and will cause parsing to fail.)
 ///
 /// Unit: number of files.
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
 #[inline]
 pub fn get_max_validated_files() -> usize {
     // If `OPTION_FILE_TRANSFER_MAX_FILES` unset, negative, or non-integer, use
@@ -110,7 +110,7 @@ pub fn get_max_validated_files() -> usize {
 /// # Returns
 /// * `Ok(())` if within limit
 /// * `Err(String)` with error message if limit exceeded
-#[cfg(not(any(target_os = "ios")))]
+#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
 pub fn check_file_count_limit(file_count: usize) -> Result<(), String> {
     let max_files = get_max_validated_files();
     if file_count > max_files {

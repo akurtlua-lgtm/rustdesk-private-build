@@ -23,7 +23,9 @@ use crate::{
     display_service, ipc, privacy_mode, video_service, VERSION,
 };
 #[cfg(any(target_os = "android", target_os = "ios"))]
-use crate::{common::DEVICE_NAME, flutter::connection_manager::start_channel};
+use crate::common::DEVICE_NAME;
+#[cfg(target_os = "android")]
+use crate::flutter::connection_manager::start_channel;
 use cidr_utils::cidr::IpCidr;
 #[cfg(target_os = "android")]
 use hbb_common::protobuf::EnumOrUnknown;
@@ -50,8 +52,9 @@ use base::{
     fs::{self, can_enable_overwrite_detection, JobType},
     message_proto::{option_message::BoolOption, permission_info::Permission},
 };
-#[cfg(any(target_os = "android", target_os = "ios"))]
+#[cfg(target_os = "android")]
 use scrap::android::{call_main_service_key_event, call_main_service_pointer_input};
+#[cfg(not(target_os = "ios"))]
 use scrap::camera;
 use serde_derive::Serialize;
 use serde_json::{json, value::Value};
@@ -76,6 +79,8 @@ use crate::virtual_display_manager;
 pub type Sender = mpsc::UnboundedSender<(Instant, Arc<Message>)>;
 
 mod trusted_devices;
+#[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+mod mobile_view_only;
 
 const FAILURE_IDX_ID_WHITELIST: usize = 2;
 // How long a rejection counts, so also how long a blocked address stays blocked. Longer
@@ -196,7 +201,9 @@ lazy_static::lazy_static! {
     static ref ALIVE_CONNS: Arc::<Mutex<Vec<i32>>> = Default::default();
     pub static ref AUTHED_CONNS: Arc::<Mutex<Vec<AuthedConn>>> = Default::default();
     pub static ref CONTROL_PERMISSIONS_ARRAY: Arc::<Mutex<Vec<(i32, ControlPermissions)>>> = Default::default();
+    #[cfg(not(target_os = "ios"))]
     static ref WAKELOCK_SENDER: Arc::<Mutex<std::sync::mpsc::Sender<(usize, usize)>>> = Arc::new(Mutex::new(start_wakelock_thread()));
+    #[cfg(not(target_os = "ios"))]
     static ref WAKELOCK_KEEP_AWAKE_OPTION: Arc::<Mutex<Option<bool>>> = Default::default();
 }
 
@@ -556,7 +563,12 @@ impl Connection {
         let (tx_video, mut rx_video) = mpsc::unbounded_channel::<(Instant, Arc<Message>)>();
         let (tx_input, _rx_input) = std_mpsc::channel();
         let (tx_from_authed, mut rx_from_authed) = mpsc::unbounded_channel::<ipc::Data>();
+        #[cfg(not(target_os = "ios"))]
         let mut hbbs_rx = crate::hbbs_http::sync::signal_receiver();
+        #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+        let Some(mut hbbs_rx) = super::mobile_host::stop_receiver(&server, id) else {
+            return;
+        };
         let (tx_post_seq, rx_post_seq) = mpsc::unbounded_channel();
         tokio::spawn(async move {
             Self::post_seq_loop(rx_post_seq).await;
@@ -663,6 +675,8 @@ impl Connection {
             conn_audit_primary_auth: ConnAuditPrimaryAuth::None,
             conn_audit_two_factor: ConnAuditTwoFactor::None,
         };
+        #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+        mobile_view_only::restrict_permissions(&mut conn);
         let addr = hbb_common::try_into_v4(addr);
         if !conn.on_open(addr).await {
             conn.closed = true;
@@ -1071,8 +1085,16 @@ impl Connection {
                 }
                 Ok(conns) = hbbs_rx.recv() => {
                     if conns.contains(&id) {
-                        conn.send_close_reason_no_retry("Closed manually by web console").await;
-                        conn.on_close("web console", true).await;
+                        #[cfg(not(target_os = "ios"))]
+                        {
+                            conn.send_close_reason_no_retry("Closed manually by web console").await;
+                            conn.on_close("web console", true).await;
+                        }
+                        #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+                        {
+                            raii::AuthedConnID::check_remove_session(conn.inner.id(), conn.session_key());
+                            conn.on_close("capture session", true).await;
+                        }
                         break;
                     }
                 }
@@ -1172,6 +1194,7 @@ impl Connection {
                 _ = second_timer.tick() => {
                     #[cfg(windows)]
                     conn.portable_check();
+                    #[cfg(not(target_os = "ios"))]
                     raii::AuthedConnID::check_wake_lock_on_setting_changed();
                     if let Some((instant, minute)) = conn.auto_disconnect_timer.as_ref() {
                         if instant.elapsed().as_secs() > minute * 60 {
@@ -1335,6 +1358,7 @@ impl Connection {
         log::debug!("post_seq_loop exited");
     }
 
+    #[cfg(not(target_os = "ios"))]
     async fn try_port_forward_loop(
         &mut self,
         rx_from_cm: &mut mpsc::UnboundedReceiver<Data>,
@@ -1947,7 +1971,10 @@ impl Connection {
         }
         self.post_conn_audit(audit);
         #[allow(unused_mut)]
+        #[cfg(not(target_os = "ios"))]
         let mut username = crate::platform::get_active_username();
+        #[cfg(target_os = "ios")]
+        let username = DEVICE_NAME.lock().unwrap().clone();
         let mut res = LoginResponse::new();
         let mut pi = PeerInfo {
             username: username.clone(),
@@ -1955,7 +1982,7 @@ impl Connection {
             ..Default::default()
         };
 
-        #[cfg(not(target_os = "android"))]
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
         {
             pi.hostname = crate::whoami_hostname();
             pi.platform = hbb_common::whoami::platform().to_string();
@@ -1964,6 +1991,11 @@ impl Connection {
         {
             pi.hostname = DEVICE_NAME.lock().unwrap().clone();
             pi.platform = "Android".into();
+        }
+        #[cfg(target_os = "ios")]
+        {
+            pi.hostname = DEVICE_NAME.lock().unwrap().clone();
+            pi.platform = "iOS".into();
         }
         #[cfg(all(target_os = "macos", not(feature = "unix-file-copy-paste")))]
         let mut platform_additions = serde_json::Map::new();
@@ -2113,6 +2145,13 @@ impl Connection {
         if self.file_transfer.is_some() || self.terminal {
             res.set_peer_info(pi);
         } else if self.view_camera {
+            #[cfg(target_os = "ios")]
+            {
+                self.send_login_error("Camera sessions are unsupported on iOS").await;
+                return false;
+            }
+            #[cfg(not(target_os = "ios"))]
+            {
             let supported_encoding = scrap::codec::Encoder::supported_encoding();
             self.last_supported_encoding = Some(supported_encoding.clone());
             log::info!("peer info supported_encoding: {:?}", supported_encoding);
@@ -2135,6 +2174,7 @@ impl Connection {
             }
             res.set_peer_info(pi);
             self.update_codec_on_login();
+            }
         } else {
             let supported_encoding = scrap::codec::Encoder::supported_encoding();
             self.last_supported_encoding = Some(supported_encoding.clone());
@@ -2223,6 +2263,7 @@ impl Connection {
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
             self.init_terminal_service().await;
         } else if self.view_camera {
+            #[cfg(not(target_os = "ios"))]
             if !wait_session_id_confirm {
                 self.try_sub_camera_displays();
             }
@@ -2236,6 +2277,7 @@ impl Connection {
         true
     }
 
+    #[cfg(not(target_os = "ios"))]
     fn try_sub_camera_displays(&mut self) {
         if let Some(s) = self.server.upgrade() {
             let mut s = s.write().unwrap();
@@ -2886,6 +2928,14 @@ impl Connection {
     }
 
     async fn on_message(&mut self, msg: Message) -> bool {
+        #[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+        let msg = match base::mobile_host_policy::restrict_view_only_message(msg) {
+            Ok(message) => message,
+            Err(reason) => {
+                self.on_close(reason, true).await;
+                return false;
+            }
+        };
         if let Some(message::Union::Misc(misc)) = &msg.union {
             // Move the CloseReason forward, as this message needs to be received when unauthorized, especially for kcp.
             if let Some(misc::Union::CloseReason(s)) = &misc.union {
@@ -3198,7 +3248,7 @@ impl Connection {
                     if self.is_authed_view_camera_conn() {
                         return true;
                     }
-                    #[cfg(any(target_os = "android", target_os = "ios"))]
+                    #[cfg(target_os = "android")]
                     if let Err(e) = call_main_service_pointer_input("mouse", me.mask, me.x, me.y) {
                         log::debug!("call_main_service_pointer_input fail:{}", e);
                     }
@@ -3237,7 +3287,7 @@ impl Connection {
                     if self.is_authed_view_camera_conn() {
                         return true;
                     }
-                    #[cfg(any(target_os = "android", target_os = "ios"))]
+                    #[cfg(target_os = "android")]
                     if let Err(e) = match pde.union {
                         Some(pointer_device_event::Union::TouchEvent(touch)) => match touch.union {
                             Some(touch_event::Union::PanStart(pan_start)) => {
@@ -4639,7 +4689,10 @@ impl Connection {
     fn video_source_count(video_source: VideoSource) -> usize {
         match video_source {
             VideoSource::Monitor => display_service::get_sync_displays().len(),
+            #[cfg(not(target_os = "ios"))]
             VideoSource::Camera => camera::Cameras::get_sync_cameras().len(),
+            #[cfg(target_os = "ios")]
+            VideoSource::Camera => 0,
         }
     }
 
@@ -5207,6 +5260,7 @@ impl Connection {
                             5_000,
                         );
                         if err_msg.is_empty() {
+                            #[cfg(not(target_os = "ios"))]
                             privacy_mode::close_other_remote_connections_for_privacy(self.inner.id);
                             crate::common::make_privacy_mode_msg(
                                 back_notification::PrivacyModeState::PrvOnSucceeded,
@@ -6676,6 +6730,7 @@ impl FileRemoveLogControl {
     }
 }
 
+#[cfg(not(target_os = "ios"))]
 fn start_wakelock_thread() -> std::sync::mpsc::Sender<(usize, usize)> {
     // Check if we should keep awake during incoming sessions
     use crate::platform::{get_wakelock, WakeLock};
@@ -6947,6 +7002,7 @@ mod raii {
                 sender,
                 printer,
             });
+            #[cfg(not(target_os = "ios"))]
             Self::check_wake_lock();
             use std::sync::Once;
             static _ONCE: Once = Once::new();
@@ -6962,6 +7018,7 @@ mod raii {
             Self(conn_id, conn_type)
         }
 
+        #[cfg(not(target_os = "ios"))]
         fn check_wake_lock() {
             let conn_count = AUTHED_CONNS.lock().unwrap().len();
             let remote_count = AUTHED_CONNS
@@ -6976,6 +7033,7 @@ mod raii {
                 .send((conn_count, remote_count)));
         }
 
+        #[cfg(not(target_os = "ios"))]
         pub fn check_wake_lock_on_setting_changed() {
             let current =
                 config::Config::get_bool_option(keys::OPTION_KEEP_AWAKE_DURING_INCOMING_SESSIONS);
@@ -7105,6 +7163,7 @@ mod raii {
                     wayland::try_close_portal_session();
                 }
             }
+            #[cfg(not(target_os = "ios"))]
             Self::check_wake_lock();
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
             {

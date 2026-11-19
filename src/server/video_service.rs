@@ -543,6 +543,7 @@ fn get_capturer_monitor(
     })
 }
 
+#[cfg(not(target_os = "ios"))]
 fn get_capturer_camera(current: usize) -> ResultType<CapturerInfo> {
     let cameras = camera::Cameras::get_sync_cameras();
     let ncamera = cameras.len();
@@ -583,6 +584,11 @@ fn get_capturer_camera(current: usize) -> ResultType<CapturerInfo> {
         capturer,
     });
 }
+#[cfg(target_os = "ios")]
+fn get_capturer_camera(_current: usize) -> ResultType<CapturerInfo> {
+    bail!("Camera capture is unsupported on iOS");
+}
+
 fn get_capturer(
     source: VideoSource,
     current: usize,
@@ -1416,13 +1422,20 @@ pub fn make_display_changed_msg(
     opt_display: Option<DisplayInfo>,
     source: VideoSource,
 ) -> Option<Message> {
+    #[cfg(target_os = "ios")]
+    if matches!(source, VideoSource::Camera) {
+        return None;
+    }
     let display = match opt_display {
         Some(d) => d,
         None => match source {
             VideoSource::Monitor => display_service::get_display_info(display_idx)?,
+            #[cfg(not(target_os = "ios"))]
             VideoSource::Camera => camera::Cameras::get_sync_cameras()
                 .get(display_idx)?
                 .clone(),
+            #[cfg(target_os = "ios")]
+            VideoSource::Camera => return None,
         },
     };
     let mut misc = Misc::new();
@@ -1436,7 +1449,7 @@ pub fn make_display_changed_msg(
             VideoSource::Monitor => display_service::capture_cursor_embedded(),
             VideoSource::Camera => false,
         },
-        #[cfg(not(target_os = "android"))]
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
         resolutions: Some(SupportedResolutions {
             resolutions: match source {
                 VideoSource::Monitor => {
@@ -1511,6 +1524,7 @@ pub fn set_take_screenshot(source: VideoSource, display_idx: usize, sid: String,
 }
 
 // We need to this function, because the `stride` may be larger than `width * 4`.
+#[cfg(not(target_os = "ios"))]
 fn get_rgba_from_pixelbuf<'a>(pixbuf: &scrap::PixelBuffer<'a>) -> ResultType<Vec<u8>> {
     let w = pixbuf.width();
     let h = pixbuf.height();
@@ -1534,6 +1548,11 @@ fn get_rgba_from_pixelbuf<'a>(pixbuf: &scrap::PixelBuffer<'a>) -> ResultType<Vec
         }
         Ok(bit_flipped)
     }
+}
+
+#[cfg(target_os = "ios")]
+fn get_rgba_from_pixelbuf(_pixbuf: &scrap::PixelBuffer<'_>) -> ResultType<Vec<u8>> {
+    bail!("Screenshots are unsupported by the iOS host probe");
 }
 
 fn handle_screenshot(screenshot: Screenshot, msg: String, w: usize, h: usize, data: Vec<u8>) {
