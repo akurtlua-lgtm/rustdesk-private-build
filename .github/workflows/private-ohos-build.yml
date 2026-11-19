@@ -66,13 +66,13 @@ jobs:
           import hashlib
           import json
           from pathlib import Path
-          import shutil
+          import subprocess
           import sys
-          from urllib.request import urlopen
           config = json.loads(Path('res/ohos/toolchain.json').read_text())
           archive = Path(sys.argv[1])
-          with urlopen(config['sdk_url'], timeout=90) as response, archive.open('wb') as output:
-              shutil.copyfileobj(response, output)
+          subprocess.run(['curl', '--fail', '--location', '--retry', '3',
+                          '--connect-timeout', '30', '--max-time', '1200',
+                          '--output', str(archive), config['sdk_url']], check=True)
           with archive.open('rb') as stream:
               digest = hashlib.file_digest(stream, 'sha256').hexdigest()
           if digest != config['sdk_sha256']:
