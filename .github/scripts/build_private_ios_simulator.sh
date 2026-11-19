@@ -32,6 +32,9 @@ export PKG_CONFIG_ALLOW_CROSS_aarch64_apple_ios_sim=1
 export PKG_CONFIG_LIBDIR_aarch64_apple_ios_sim="$VCPKG_ROOT/installed/arm64-ios-simulator/lib/pkgconfig"
 export PKG_CONFIG_LIBDIR_aarch64_apple_darwin="$VCPKG_ROOT/installed/arm64-osx/lib/pkgconfig"
 export IPHONEOS_DEPLOYMENT_TARGET=15.0
+# coreaudio-sys 0.2.15 passes the Rust -ios-sim triple directly to Clang.
+ios_sim_sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
+export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim="--target=arm64-apple-ios15.0-simulator -isysroot \"$ios_sim_sdk\""
 cargo build --locked --release --lib --target aarch64-apple-ios-sim --features flutter
 test -s target/aarch64-apple-ios-sim/release/liblibrustdesk.a
 (
