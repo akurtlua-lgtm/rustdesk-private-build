@@ -39,7 +39,7 @@ else
   export PKG_CONFIG_LIBDIR_aarch64_apple_ios="$VCPKG_ROOT/installed/$PROBE_TRIPLET/lib/pkgconfig"
   export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios="--target=arm64-apple-ios15.0 -isysroot \"$sdk\""
 fi
-cargo build --locked --release --lib --target "$PROBE_TARGET" --features flutter,ios-host-link-probe
+cargo build --locked --release --lib --target "$PROBE_TARGET" --features flutter,ios-host-link-probe,mobile-view-only-host
 derived="$RUNNER_TEMP/ios-host-link-probe-derived"
 if ! xcodebuild -project res/ios-host-probe/Probe.xcodeproj -target BroadcastProbe \
   -configuration Release -sdk "$PROBE_SDK" SYMROOT="$derived" \

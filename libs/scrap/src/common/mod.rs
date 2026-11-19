@@ -42,6 +42,8 @@ cfg_if! {
 
 pub mod codec;
 pub mod convert;
+#[cfg(any(test, feature = "mobile-view-only-host"))]
+pub mod mobile_frame;
 #[cfg(feature = "hwcodec")]
 pub mod hwcodec;
 #[cfg(feature = "mediacodec")]

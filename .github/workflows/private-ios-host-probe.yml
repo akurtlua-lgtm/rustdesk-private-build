@@ -13,6 +13,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  capture-buffer-tests:
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-host-')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: '1.81'
+      - name: Test actual bounded capture inbox without native SDK dependencies
+        run: |
+          rustc --edition 2021 --test libs/scrap/src/common/mobile_frame.rs -o "$RUNNER_TEMP/mobile-frame-tests"
+          "$RUNNER_TEMP/mobile-frame-tests"
+
   generate-bridge:
     if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-host-')
     uses: ./.github/workflows/bridge.yml
@@ -22,7 +37,7 @@ jobs:
       RD_SERVER_PUBLIC_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 
   broadcast-extension:
-    needs: generate-bridge
+    needs: [generate-bridge, capture-buffer-tests]
     runs-on: macos-15
     timeout-minutes: 150
     strategy:
