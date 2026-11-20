@@ -82,10 +82,13 @@ final class SharingCapture: NSObject, SCContentSharingPickerObserver, SCStreamOu
         delivery.close(.user)
     }
 
-    func contentSharingPickerStartDidFailWithError(_ error: any Error) {
-        picking = false
-        VideoCaptureAPI.dismissPicker(observer: self)
+    nonisolated func contentSharingPickerStartDidFailWithError(_ error: any Error) {
         delivery.close(.startup)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.picking = false
+            VideoCaptureAPI.dismissPicker(observer: self)
+        }
     }
 
     nonisolated func stream(_ stream: SCStream, didOutputSampleBuffer sample: CMSampleBuffer,
