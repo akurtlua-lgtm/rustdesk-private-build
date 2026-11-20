@@ -21,6 +21,9 @@ jobs:
           clang++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=undefined \
             res/ohos-capture/frame.cpp res/ohos-capture/frame_test.cpp -o "$RUNNER_TEMP/owned-frame-tests"
           "$RUNNER_TEMP/owned-frame-tests"
+          clang++ -std=c++17 -Wall -Wextra -Werror -pthread -fsanitize=address,undefined -fno-sanitize-recover=undefined \
+            res/ohos-capture/frame.cpp res/ohos-capture/delivery.cpp res/ohos-capture/delivery_test.cpp -o "$RUNNER_TEMP/delivery-tests"
+          "$RUNNER_TEMP/delivery-tests"
   capture-sdk:
     needs: owned-frame-tests
     runs-on: macos-15
@@ -66,12 +69,15 @@ jobs:
           root=Path('capture-sdk-output');data=(root/'libcapture_probe.so').read_bytes();elf=(root/'ELF.txt').read_text()
           assert data[:6]==b'\x7fELF\x02\x01' and int.from_bytes(data[18:20],'little')==183
           assert 'libnative_avscreen_capture.so' in elf and 'RPATH' not in elf and 'RUNPATH' not in elf
-          for name in ('Init','SetMicrophoneEnabled','SetStateCallback','SetDataCallback','SetErrorCallback'):
+          for name in ('Create','Init','SetMicrophoneEnabled','SetStateCallback','SetDataCallback','SetErrorCallback',
+                       'StartScreenCapture','StopScreenCapture','Release'):
               assert 'OH_AVScreenCapture_'+name in elf
-          assert 'OH_AVScreenCapture_Start' not in elf
+          for name in ('OH_AVBuffer_GetNativeBuffer','OH_NativeBuffer_MapPlanes','OH_NativeBuffer_Unmap','OH_NativeBuffer_Unreference'):
+              assert name in elf
           record=dict(source=source,run_id=os.environ['GITHUB_RUN_ID'],sdk_api=20,sdk_version='6.0.0.47 Beta1',
                       architecture='arm64',library='libcapture_probe.so',size=len(data),sha256=hashlib.sha256(data).hexdigest(),
-                      capture_sdk_linked=True,start_entry_present=False,system_screen_capture_tested=False,
+                      capture_sdk_linked=True,start_entry_present=True,sdk_lifecycle_entry_points_linked=True,
+                      authorized_delivery_native_sanitized_cases=3,system_screen_capture_tested=False,
                       host_engine_connected=False,commercial_harmonyos_tested=False,physical_device_tested=False)
           (root/'verification.json').write_text(json.dumps(record,indent=2)+'\n')
           PY

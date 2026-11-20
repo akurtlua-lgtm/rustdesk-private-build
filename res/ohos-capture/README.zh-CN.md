@@ -1,4 +1,8 @@
-# 原生鸿蒙只读采集准备实验
+# 原生鸿蒙只读采集组件
+
+新增的默认关闭 `Capture`/`Delivery` 已提供 SDK 生命周期及授权交付门禁，实际范围和验证边界见 [当前接入说明](../../OHOS_SHARING_PROGRESS.md)。仍未接入 HAP 或 Rust 被控引擎，不是完整手机共享。
+
+## 初期准备实验记录（2026-11-19）
 
 独立开发模块，不被现有 HAP、ArkTS/N-API 或 Rust 主控目标引用。CMake 开关 RD_BUILD_OHOS_CAPTURE_PROBE 默认关闭；没有创建、开始采集、启动 host 或输入控制入口。现有手机主控及其前后台行为保持不变。
 
