@@ -28,6 +28,7 @@ use_dasp = ["dasp"]
 flutter = ["flutter_rust_bridge"]
 ios-host-link-probe = []
 ios-hostcore-compile-probe = ["mobile-view-only-host", "base/mobile-host-policy"]
+ohos-hostcore-compile-probe = ["ios-hostcore-compile-probe"]
 mobile-view-only-host = ["scrap/mobile-view-only-host"]
 default = ["use_dasp"]
 hwcodec = ["scrap/hwcodec"]
@@ -80,7 +81,7 @@ default-net = { git = "https://github.com/rustdesk-org/netdev", branch = "rustde
 wol-rs = "1.0"
 flutter_rust_bridge = { version = "=1.80", features = ["uuid"], optional = true}
 errno = "0.3"
-rdev = { git = "https://github.com/rustdesk-org/rdev" }
+rdev = { path = "libs/ohos-rdev" }
 url = { version = "2.3", features = ["serde"] }
 crossbeam-queue = "0.3"
 hex = "0.4"
@@ -98,7 +99,10 @@ reqwest = { version = "0.12", features = ["blocking", "socks", "json", "native-t
 cpal = { git = "https://github.com/rustdesk-org/cpal", branch = "osx-screencapturekit" }
 ringbuf = "0.3"
 
-[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+[target.'cfg(target_env = "ohos")'.dependencies]
+ringbuf = "0.3"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios", target_env = "ohos")))'.dependencies]
 mac_address = "1.1"
 sciter-rs = { git = "https://github.com/rustdesk-org/rust-sciter", branch = "dyn" }
 sys-locale = "0.3"
@@ -174,15 +178,15 @@ piet = "0.6"
 piet-coregraphics = "0.6"
 foreign-types = "0.3"
 
-[target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dependencies]
+[target.'cfg(all(any(target_os = "macos", target_os = "linux", target_os = "windows"), not(target_env = "ohos")))'.dependencies]
 tray-icon = { git = "https://github.com/tauri-apps/tray-icon", version = "0.21.3" }
 tao = { git = "https://github.com/rustdesk-org/tao", branch = "dev" }
 image = "0.24"
 
-[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+[target.'cfg(all(any(target_os = "macos", target_os = "linux"), not(target_env = "ohos")))'.dependencies]
 keepawake = { git = "https://github.com/rustdesk-org/keepawake-rs" }
 
-[target.'cfg(any(target_os = "windows", target_os = "linux"))'.dependencies]
+[target.'cfg(all(any(target_os = "windows", target_os = "linux"), not(target_env = "ohos")))'.dependencies]
 wallpaper = { git = "https://github.com/rustdesk-org/wallpaper.rs" }
 tiny-skia = "0.11"
 softbuffer = "0.4"
@@ -190,7 +194,7 @@ fontdb = "0.23"
 bytemuck = "1.23"
 ttf-parser = "0.25"
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(all(target_os = "linux", not(target_env = "ohos")))'.dependencies]
 libxdo-sys = "0.11"
 psimple = { package = "libpulse-simple-binding", version = "2.27" }
 pulse = { package = "libpulse-binding", version = "2.27" }
@@ -221,7 +225,7 @@ android-wakelock = { git = "https://github.com/rustdesk-org/android-wakelock" }
 
 [workspace]
 members = ["libs/scrap", "libs/hbb_common", "libs/base", "libs/enigo", "libs/clipboard", "libs/virtual_display", "libs/virtual_display/dylib", "libs/portable", "libs/remote_printer"]
-exclude = ["vdi/host"]
+exclude = ["vdi/host", "libs/ohos-rdev"]
 
 # Patch libxdo-sys to use a stub implementation that doesn't require libxdo
 # This allows building and running on systems without libxdo installed (e.g., Wayland-only)
@@ -258,7 +262,7 @@ tungstenite = { git = "https://github.com/rustdesk-org/tungstenite-rs", rev = "e
 # webrtc: SettingEngine cannot reach the ICE agent's max_binding_requests, which decides how
 # long the answerer keeps checking a pair that has not answered yet.
 webrtc = { git = "https://github.com/rustdesk-org/webrtc", rev = "49c89bd8d30e6e62e4c1a96cee38fdc11f79ef63" }
-webrtc-util = { git = "https://github.com/rustdesk-org/webrtc", rev = "49c89bd8d30e6e62e4c1a96cee38fdc11f79ef63" }
+webrtc-util = { path = "libs/ohos-webrtc-util" }
 webrtc-sctp = { git = "https://github.com/rustdesk-org/webrtc", rev = "49c89bd8d30e6e62e4c1a96cee38fdc11f79ef63" }
 
 [package.metadata.winres]
@@ -304,3 +308,6 @@ debug = 1
 # enum check aborts on them (release builds never had the check).
 [profile.dev.package.sciter-rs]
 debug-assertions = false
+
+[patch.'https://github.com/rustdesk-org/webrtc']
+webrtc-util = { path = "libs/ohos-webrtc-util" }

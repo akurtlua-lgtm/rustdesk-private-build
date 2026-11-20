@@ -1,31 +1,32 @@
-#[cfg(any(test, not(target_os = "linux")))]
+#[cfg(any(test, not(target_os = "linux"), target_env = "ohos"))]
 mod audio_resampler;
 mod keyboard;
 /// cbindgen:ignore
 pub mod platform;
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", target_os = "ios", target_env = "ohos")))]
 pub use platform::{
     clip_cursor, get_cursor, get_cursor_data, get_cursor_pos, get_focused_display,
     set_cursor_pos, start_os_service,
 };
-#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
+#[cfg(any(not(any(target_os = "ios", target_env = "ohos")), feature = "ios-hostcore-compile-probe"))]
 /// cbindgen:ignore
 mod server;
-#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
+#[cfg(any(not(any(target_os = "ios", target_env = "ohos")), feature = "ios-hostcore-compile-probe"))]
 pub use self::server::*;
 mod client;
 mod lan;
-#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
+#[cfg(any(not(any(target_os = "ios", target_env = "ohos")), feature = "ios-hostcore-compile-probe"))]
 mod rendezvous_mediator;
-#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
+#[cfg(any(not(any(target_os = "ios", target_env = "ohos")), feature = "ios-hostcore-compile-probe"))]
 pub use self::rendezvous_mediator::*;
 /// cbindgen:ignore
 pub mod common;
-#[cfg(any(not(target_os = "ios"), feature = "ios-hostcore-compile-probe"))]
+#[cfg(any(not(any(target_os = "ios", target_env = "ohos")), feature = "ios-hostcore-compile-probe"))]
 pub mod ipc;
 #[cfg(not(any(
     target_os = "android",
     target_os = "ios",
+    target_env = "ohos",
     feature = "flutter"
 )))]
 pub mod ui;
@@ -41,30 +42,32 @@ mod bridge_generated;
 pub mod flutter;
 #[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
 pub mod flutter_ffi;
+#[cfg(target_env = "ohos")]
+pub mod ohos_ffi;
 use common::*;
 mod auth_2fa;
 #[cfg(any(test, all(target_os = "ios", feature = "ios-host-link-probe")))]
 mod ios_host_link_probe;
-#[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+#[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
 mod mobile_host_entry;
 mod trusted_devices;
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 mod clipboard;
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", target_os = "ios", target_env = "ohos")))]
 pub mod core_main;
 mod custom_server;
 mod lang;
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", target_os = "ios", target_env = "ohos")))]
 mod port_forward;
 mod port_forward_mux;
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", target_os = "ios", target_env = "ohos")))]
 mod tray;
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", target_os = "ios", target_env = "ohos")))]
 mod whiteboard;
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", target_os = "ios", target_env = "ohos")))]
 mod updater;
 mod private_update;
 
@@ -74,7 +77,7 @@ mod ui_session_interface;
 
 mod hbbs_http;
 
-#[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
+#[cfg(all(any(target_os = "windows", target_os = "linux", target_os = "macos"), not(target_env = "ohos")))]
 pub mod clipboard_file;
 
 pub mod privacy_mode;

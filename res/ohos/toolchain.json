@@ -1,0 +1,13 @@
+{
+  "sdk_url": "https://repo.huaweicloud.com/openharmony/os/6.0-Release/L2-SDK-MAC-M1-PUBLIC.tar.gz",
+  "sdk_sha256": "d4b0c942cbc8dfc7f28f49c0f33648f332d43c3a51399f2463655c2ef1f2c659",
+  "sdk_api": 20,
+  "sdk_version": "6.0.0.47",
+  "sdk_release_type": "Beta1",
+  "runtime": "OpenHarmony development validation; commercial HarmonyOS device verification pending",
+  "minimum_api": 17,
+  "architecture": "arm64-v8a",
+  "rust": "1.81.0",
+  "vcpkg_commit": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
+  "hbb_common_commit": "fae47e024dd83cef6aaecde0aa7d11731df11649"
+}

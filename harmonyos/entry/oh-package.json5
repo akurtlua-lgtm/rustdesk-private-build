@@ -1,0 +1,8 @@
+{
+  "name": "entry",
+  "version": "1.5.14",
+  "dependencies": {
+    "libentry.so": "file:./src/main/cpp/types/libentry"
+  },
+  "modelVersion": "6.0.0"
+}

@@ -93,7 +93,7 @@ impl Display {
         true
     }
     pub fn name(&self) -> String {
-        "iOS screen".into()
+        if cfg!(target_env = "ohos") { "HarmonyOS screen".into() } else { "iOS screen".into() }
     }
 }
 

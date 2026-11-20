@@ -1,12 +1,14 @@
-# 私有移动端开发
+# 私有移动端基础候选记录
+
+以下保留早期平台基础记录；新共享链路的当前候选边界见 IOS_SHARING_PROGRESS.md、IOS_CAPTURE_PROGRESS.md（独立采集分支）与 OHOS_SHARING_PROGRESS.md。Android 正式版已另行发布 android-v1.5.14；本文中的早期 unsigned/待发布描述不代表当前正式版状态。
 
 移动端在独立 `codex/mobile-*` 分支验证，不改变桌面七包的发布集合、签名更新协议或当前正式版本。移动开发候选版本为 1.5.14+82；这不是已发布版本。
 
 | 平台 | 本阶段实现与构建范围 | 尚未验收 |
 | --- | --- | --- |
-| Android ARM64、兼容 APK 的旧版鸿蒙 | 复用 Flutter/Rust 主控、MediaProjection 共享和辅助功能输入；独立应用 ID；候选只构建 unsigned APK | unsigned APK 已实际构建；启动、登录、远控和授权撤销尚未实测，最终持久签名安装包尚未生成 |
+| Android ARM64、兼容 APK 的旧版鸿蒙 | 复用 Flutter/Rust 主控、MediaProjection 共享和辅助功能输入；独立应用 ID；候选只构建 unsigned APK | unsigned APK 已实际构建并独立核验；尚缺启动、登录、远控、授权撤销与最终持久签名安装包 |
 | iOS 15+ ARM64 模拟器 | 原有主控端；模拟器专用 Rust 静态库和依赖；真实安装/启动检查 | 实际构建/模拟器运行；手机屏幕共享；真机签名分发 |
-| 原生 HarmonyOS 5/6 | 独立平台移植审查，先主控及软件解码，后按系统能力共享 | 尚无可安装 HAP，尚未完成核心引擎移植或真机验证 |
+| 原生 HarmonyOS 5/6 | 原生 ArkTS V2 主控界面、Rust 会话引擎、RGBA/EGL 渲染、OHAudio 播放及 HTTPS 账号/设备资料；实际编译出未签名 HAP | 仅公开 OpenHarmony API20 SDK 编译验证；商业 HarmonyOS SDK、签名、真机运行、手机屏幕共享和被控均未验收 |
 
 原生鸿蒙与 Android APK 是两个不同目标。公开 OpenHarmony SDK 可用于目标编译探索，不等同于已验证商业 HarmonyOS SDK、设备授权或应用分发。参考提案 rustdesk/rustdesk#16779 尚未合入；不得整份覆盖私有源码或替换共享子模块。iOS 当前没有被控引擎，不能把主控包称为已支持共享。iOS 普通应用和鸿蒙手机的全机输入控制不作为默认能力承诺。
 
@@ -29,6 +31,33 @@
 
 完整移动产物、源码来源、真实日志隐私和必要桌面回归全部验证前不合入 main；没有真实引擎和实际运行证据时不标为平台适配完成。iOS 共享、原生鸿蒙和最终安装包继续独立推进。
 
+
+## 原生鸿蒙开发候选
+
+`harmonyos/` 是独立的 Stage/ArkTS V2 原生工程，ARM64、最低 API17、目标 API20，应用 ID 与私有移动端一致。公开 SDK 的真实元数据为 6.0.0.47 / Beta1；镜像目录名为 Release 不代表组件已获商业 HarmonyOS 真机验收。当前只使用普通应用能力，不声明手机全机输入注入权限、不提供伪成功接口。参考提案只用于评估，没有合入其790文件或替换共享协议历史。
+
+真实 Rust 目标检查和 debug 动态库链接已通过；完整 HAP 已执行 CompileArkTS、BuildNative、PackageHap、PackingCheck，并独立核对应用身份/API、真实 ABC、三个 ARM64 ELF、14个原生入口和依赖。原生核心只依赖 OHAudio、libc++ 和 libc；未链接 X11/GTK/PulseAudio。桥接编译使用实际 SDK 的 `-Wall -Wextra -Werror`，Clang 静态分析无诊断。控制事件复制后通过有界非阻塞 TSFN 送 UI；RGBA 同步绘制后解绑 EGL 上下文。退出先注销并等待不可重入回调结束，再释放 UI 资源；输入入口同时要求真实首帧、认证连接、远端键鼠许可及非仅查看，初始会话明确为仅查看。
+
+账号请求只在线程池工作线程执行，固定 HTTPS 接口、证书校验、拒绝重定向、超时与响应上限；token 仅保留内存，401清除账号/设备资料，账号变化清除设备编辑表单。注册等待管理员审核；账号登录与设备密码/2FA/人工授权分离。普通用户设备范围仍由原后台校验；本阶段没有新增生产后台路由，设备资料审核/归档不表示原生远控 ACL。尚未发送真实账号请求做整端运行验证。
+
+`.github/workflows/private-ohos-build.yml` 单独在 `codex/ohos-*` push 或手动触发，验证固定 SDK 摘要及实际组件版本，编译 release Rust/HAP并检查产物，只上传 unsigned 开发 Artifact，无 Release 写权限。长期签名或服务器私钥不进入本流程。构建须在隔离 checkout 执行；脚本会应用已核对的共享库补丁并产生本地依赖/构建缓存，遇到其他 tracked 修改会拒绝，不重置、清理或提交任何现有工作区。
+
+共享库 gitlink 固定原 fae47e024dd83cef6aaecde0aa7d11731df11649，仅在隔离构建应用 `res/ohos/hbb_common-ohos.patch`：分离 X11 依赖/导出，并让配置使用应用私有目录。两个本地兼容副本分别固定原已锁定 rdev 0904f23、webrtc-util 49c89bd；保留来源/许可证，除 OHOS 的依赖与 cfg 隔离外不改变原平台源代码。不能因此宣称既有桌面和 Android/iOS 全部回归通过。
+
+已有文件的必要回归面：
+
+- `Cargo.toml`/`Cargo.lock`、`libs/enigo/Cargo.toml`：固定兼容副本，非 OHOS 源码保持原提交，仍须全平台依赖和编译回归。
+- `libs/base/Cargo.toml`、`libs/base/src/platform/mod.rs`：OHOS 不使用桌面 Linux 组件；其他平台原条件保持。
+- `libs/scrap/Cargo.toml`、`libs/scrap/build.rs`、`libs/scrap/src/common/{codec,convert,mod}.rs`、`res/vcpkg/libvpx/portfile.cmake`：新增 OHOS 交叉编译、软件解码/RGBA和专用依赖目标；未将平台称为桌面 Linux。
+- `src/lib.rs`、`src/platform/mod.rs`、`src/platform/private_mobile.rs`、`src/common.rs`：选择原生控制端入口和应用目录/HTTPS预设，排除 OHOS 不支持的桌面服务；其他平台使用原路径。
+- `src/client.rs`、`src/client/{io_loop,file_trait,screenshot}.rs`：OHOS 独立音频/RGBA接线，排除桌面剪贴板/窗口/屏幕采集路径；共享循环仅增加 OHOS 活动会话检查，防止关闭后延迟启动。
+- `src/keyboard.rs`、`src/keyboard/shortcuts.rs`、`src/ui_{interface,cm_interface,session_interface}.rs`：仅 OHOS 隔离本地全局键盘/宿主服务接口，保留既有远端会话认证与输入方法；没有变更共享 trait/调用者签名。
+- `src/auth_2fa.rs`、`src/hbbs_http/sync.rs`、`src/lan.rs`、`src/lang.rs`、`src/privacy_mode.rs`：OHOS 使用已有移动端配置分支或排除宿主功能；原平台条件与实现保持。
+- `.github/scripts/verify_mobile_artifacts.py`、`test_mobile_artifacts.py`：新增 HAP 校验和拒绝错误身份/内嵌构建路径的回归；原 APK/iOS 校验函数保持。
+
+新增实现集中于 `src/ohos_ffi.rs`、`src/client/ohos_audio.rs`、`src/platform/ohos_account.rs`、`harmonyos/` 与独立构建脚本。没有修改桌面正式发布逻辑、服务器、账号后台、密钥、防火墙、代理或本机权限。
+
+已知未通过/未完成：Rust Clippy 的 `-D warnings` 仍被共享库42项既有 lint 阻断，不能称为 Clippy 全绿；该角色审查因此停止，另行的代码/安全/C++/UI静态审查不替代此检查。尚无原生 OHOS 运行环境/手机，未验证实际初始化、TLS请求、画面、音频、输入权限拒绝与退出压力；release HAP/全平台回归仍须最终候选 CI。iOS 手机屏幕共享/被控核心和原生鸿蒙手机采集均尚未实现，不把主控编译成功当作完成全部手机需求。
 
 ## 手机候选补充验证
 

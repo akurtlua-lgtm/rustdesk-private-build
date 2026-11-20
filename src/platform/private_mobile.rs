@@ -21,7 +21,7 @@ fn configured_api(api: Option<&str>) -> Option<&str> {
     })
 }
 
-#[cfg(any(target_os = "android", target_os = "ios"))]
+#[cfg(any(target_os = "android", target_os = "ios", target_env = "ohos"))]
 pub(crate) fn load_api_server() {
     use hbb_common::{config, log};
 

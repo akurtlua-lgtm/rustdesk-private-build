@@ -39,7 +39,7 @@ use crate::{
 
 type Message = RendezvousMessage;
 
-#[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+#[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
 pub(crate) mod mobile_sharing;
 
 fn connection_meta(
@@ -312,7 +312,7 @@ impl RendezvousMediator {
         log::info!("server restart");
     }
 
-    #[cfg(not(target_os = "ios"))]
+    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
     pub async fn start_all() {
         crate::test_nat_type();
         if config::is_outgoing_only() {
@@ -336,7 +336,7 @@ impl RendezvousMediator {
         });
         #[cfg(target_os = "android")]
         let start_lan_listening = true;
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         let start_lan_listening = crate::platform::is_installed();
         if start_lan_listening {
             std::thread::spawn(move || {
@@ -492,7 +492,7 @@ impl RendezvousMediator {
                     let expired = last_register_resp.map(|x| x.elapsed().as_millis() as i64 >= REG_INTERVAL).unwrap_or(true);
                     let timeout = last_register_sent.map(|x| x.elapsed().as_millis() as i64 >= reg_timeout).unwrap_or(false);
                     // temporarily disable exponential backoff for android before we add wakeup trigger to force connect in android
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     if crate::using_public_server() { // only turn on this for public server, may help DDNS self-hosting user.
                         if timeout && reg_timeout < MAX_REG_TIMEOUT {
                             reg_timeout += MIN_REG_TIMEOUT;

@@ -1,0 +1,18 @@
+{
+  "dependencies": [
+    "aom",
+    "libvpx",
+    "libyuv",
+    "opus",
+    "libsodium",
+    { "name": "libsodium", "host": true }
+  ],
+  "vcpkg-configuration": {
+    "default-registry": {
+      "kind": "builtin",
+      "baseline": "9e593bb18ea69cc5095e012465dcd675a822ed0d"
+    },
+    "overlay-ports": ["../vcpkg"],
+    "overlay-triplets": ["triplets"]
+  }
+}
