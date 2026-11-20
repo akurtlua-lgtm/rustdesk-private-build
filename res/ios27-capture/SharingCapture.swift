@@ -5,7 +5,7 @@ import ScreenCaptureKit
 
 @available(iOS 27.0, *)
 @MainActor
-final class SharingCapture: NSObject, SCContentSharingPickerObserver, SCStreamOutput, SCStreamDelegate {
+final class SharingCapture: NSObject, @MainActor SCContentSharingPickerObserver, SCStreamOutput, SCStreamDelegate {
     nonisolated let delivery: CaptureDelivery
     private let queue = DispatchQueue(label: "private-capture-video")
     private var stream: SCStream?
