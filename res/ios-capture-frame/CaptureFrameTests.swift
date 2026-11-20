@@ -2,6 +2,27 @@ import CoreImage
 import CoreVideo
 import Foundation
 
+final class DeliveryChecks: @unchecked Sendable {
+    private let lock = NSLock()
+    private var frames = 0
+    private var closes: [CaptureStopReason] = []
+
+    func consume(_ frame: CaptureFrame) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        precondition(frame.width == 4 && frame.height == 4 && frame.pixels.count == 64)
+        frames += 1
+        return true
+    }
+    func close(_ reason: CaptureStopReason) {
+        lock.lock(); defer { lock.unlock() }
+        closes.append(reason)
+    }
+    func verify(frames expectedFrames: Int, closes expectedCloses: [CaptureStopReason]) {
+        lock.lock(); defer { lock.unlock() }
+        precondition(frames == expectedFrames && closes == expectedCloses)
+    }
+}
+
 @main
 struct CaptureFrameTests {
     static func makeBuffer(_ format: OSType, width: Int, height: Int) -> CVPixelBuffer {
@@ -61,6 +82,24 @@ struct CaptureFrameTests {
             precondition(black.pixels[offset + 2] < 10 && black.pixels[offset + 3] > 240)
         }
         print("Video-range NV12 to packed BGRA passed")
-        print("2 pixel buffer tests passed")
+        let checks = DeliveryChecks()
+        let delivery = CaptureDelivery(context: context, consumer: { checks.consume($0) },
+                                        didClose: { checks.close($0) })
+        delivery.submit(nv12, orientation: .up)
+        checks.verify(frames: 0, closes: [])
+        delivery.authorize(); delivery.submit(nv12, orientation: .up)
+        checks.verify(frames: 1, closes: [])
+        delivery.close(.user); delivery.authorize(); delivery.submit(nv12, orientation: .up)
+        delivery.close(.system)
+        checks.verify(frames: 1, closes: [.user])
+        precondition(delivery.isClosed)
+        let rejected = CaptureDelivery(context: context, consumer: { _ in false },
+                                       didClose: { checks.close($0) })
+        rejected.authorize(); rejected.submit(nv12, orientation: .up)
+        rejected.submit(nv12, orientation: .up)
+        checks.verify(frames: 1, closes: [.user, .delivery])
+        precondition(rejected.isClosed)
+        print("Authorized delivery and irreversible stop passed")
+        print("3 pixel buffer and delivery tests passed")
     }
 }

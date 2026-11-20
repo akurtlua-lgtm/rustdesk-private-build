@@ -3,7 +3,7 @@ import CoreVideo
 import Foundation
 import ImageIO
 
-struct CaptureFrame {
+struct CaptureFrame: Sendable {
     let width: Int
     let height: Int
     let stride: Int

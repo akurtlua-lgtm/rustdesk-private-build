@@ -4,6 +4,8 @@ enum VideoCaptureAPI {
 }
 #else
 import Dispatch
+import CoreMedia
+import CoreVideo
 import ScreenCaptureKit
 
 @available(iOS 27.0, *)
@@ -18,6 +20,9 @@ enum VideoCaptureAPI {
     ) throws -> SCStream {
         let configuration = SCStreamConfiguration()
         configuration.capturesAudio = false
+        configuration.pixelFormat = kCVPixelFormatType_32BGRA
+        configuration.minimumFrameInterval = CMTime(value: 1, timescale: 30)
+        configuration.queueDepth = 3
         let stream = SCStream(filter: filter, configuration: configuration, delegate: delegate)
         try stream.addStreamOutput(output, type: .screen, sampleHandlerQueue: queue)
         return stream
@@ -33,6 +38,13 @@ enum VideoCaptureAPI {
         picker.add(observer)
         picker.isActive = true
         picker.present()
+    }
+
+    @MainActor
+    static func dismissPicker(observer: any SCContentSharingPickerObserver) {
+        let picker = SCContentSharingPicker.shared
+        picker.remove(observer)
+        picker.isActive = false
     }
 }
 #endif
