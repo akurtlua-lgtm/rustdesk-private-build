@@ -39,6 +39,7 @@ class BroadcastCaptureHandler: RPBroadcastSampleHandler {
     }
 
     override func processSampleBuffer(_ sampleBuffer: CMSampleBuffer, with type: RPSampleBufferType) {
+        guard #unavailable(iOS 27.0) else { return }
         guard type == .video, CMSampleBufferIsValid(sampleBuffer), CMSampleBufferDataIsReady(sampleBuffer),
               let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         lock.lock()
