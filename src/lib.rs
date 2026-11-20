@@ -45,6 +45,8 @@ use common::*;
 mod auth_2fa;
 #[cfg(any(test, all(target_os = "ios", feature = "ios-host-link-probe")))]
 mod ios_host_link_probe;
+#[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+mod mobile_host_entry;
 mod trusted_devices;
 #[cfg(not(target_os = "ios"))]
 mod clipboard;

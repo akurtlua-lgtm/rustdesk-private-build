@@ -392,3 +392,128 @@ async fn registration_ack_relay_key_and_inflight_work_revoke_together() {
     Config::set_option("key".into(), saved_key);
     Config::set_option("relay-server".into(), saved_relay);
 }
+
+#[tokio::test]
+async fn native_entry_owns_only_one_runtime_and_revokes_stale_callbacks() {
+    use crate::mobile_host_entry::*;
+    use hbb_common::rendezvous_proto::{
+        rendezvous_message, RegisterPeerResponse, RegisterPkResponse, RendezvousMessage,
+    };
+    initialize();
+    let udp = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let saved_host = Config::get_option("custom-rendezvous-server");
+    let saved_key = Config::get_option("key");
+    Config::set_option(
+        "custom-rendezvous-server".into(),
+        udp.local_addr().unwrap().to_string(),
+    );
+    let saved_relay = Config::get_option("relay-server");
+    let (public, _) = sign::gen_keypair();
+    let servers = serde_json::json!({"schema":1,"id_server":udp.local_addr().unwrap().to_string(),
+        "relay_server":"","key":crate::encode64(public.0)});
+    let encoded = serde_json::to_vec(&servers).unwrap();
+    assert_eq!(
+        unsafe { rd_mobile_host_configure_servers(encoded.as_ptr(), encoded.len()) },
+        0
+    );
+    let mut forbidden = servers.clone();
+    forbidden["access_token"] = serde_json::json!("rdoss_v1_synthetic");
+    let encoded = serde_json::to_vec(&forbidden).unwrap();
+    assert_eq!(
+        unsafe { rd_mobile_host_configure_servers(encoded.as_ptr(), encoded.len()) },
+        -1
+    );
+    let needed = unsafe { rd_mobile_host_servers(std::ptr::null_mut(), 0) };
+    let mut snapshot = vec![0; needed];
+    assert_eq!(
+        unsafe { rd_mobile_host_servers(snapshot.as_mut_ptr(), snapshot.len()) },
+        needed
+    );
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&snapshot[..needed - 1]).unwrap(),
+        servers
+    );
+    let pixels = vec![128; 128 * 96 * 4];
+    assert_eq!(
+        unsafe { rd_mobile_host_begin(std::ptr::null(), pixels.len(), 128, 96, 512) },
+        0
+    );
+    let token = unsafe { rd_mobile_host_begin(pixels.as_ptr(), pixels.len(), 128, 96, 512) };
+    assert!(token > 0);
+    assert_eq!(rd_mobile_host_state(token), 1);
+    assert_eq!(
+        unsafe { rd_mobile_host_begin(pixels.as_ptr(), pixels.len(), 128, 96, 512) },
+        0
+    );
+    assert_eq!(
+        rd_mobile_host_run(token),
+        -2,
+        "existing runtime must not be nested"
+    );
+    let worker = std::thread::spawn(move || rd_mobile_host_run(token));
+    let mut bytes = [0u8; 4096];
+    let (length, device) = timeout(5000, udp.recv_from(&mut bytes))
+        .await
+        .unwrap()
+        .unwrap();
+    let request = RendezvousMessage::parse_from_bytes(&bytes[..length]).unwrap();
+    assert!(matches!(
+        request.union,
+        Some(rendezvous_message::Union::RegisterPk(_))
+    ));
+    let mut reply = RendezvousMessage::new();
+    reply.set_register_pk_response(RegisterPkResponse::new());
+    udp.send_to(&reply.write_to_bytes().unwrap(), device)
+        .await
+        .unwrap();
+    let (length, source) = timeout(5000, udp.recv_from(&mut bytes))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(source, device);
+    let request = RendezvousMessage::parse_from_bytes(&bytes[..length]).unwrap();
+    assert!(matches!(
+        request.union,
+        Some(rendezvous_message::Union::RegisterPeer(_))
+    ));
+    assert_eq!(rd_mobile_host_state(token), 2);
+    reply.set_register_peer_response(RegisterPeerResponse::new());
+    udp.send_to(&reply.write_to_bytes().unwrap(), device)
+        .await
+        .unwrap();
+    timeout(5000, async {
+        while rd_mobile_host_state(token) != 3 {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(
+        unsafe { rd_mobile_host_frame(token, pixels.as_ptr(), pixels.len(), 128, 96, 512) },
+        0
+    );
+    assert_eq!(rd_mobile_host_stop(token), 0);
+    timeout(5000, async {
+        while !worker.is_finished() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(worker.join().unwrap(), 0);
+    assert_eq!(rd_mobile_host_state(token), 5);
+    assert_eq!(rd_mobile_host_release(token), 0);
+    assert_eq!(rd_mobile_host_state(token), 0);
+    let next = unsafe { rd_mobile_host_begin(pixels.as_ptr(), pixels.len(), 128, 96, 512) };
+    assert!(next > token);
+    assert_eq!(
+        unsafe { rd_mobile_host_frame(token, pixels.as_ptr(), pixels.len(), 128, 96, 512) },
+        -1
+    );
+    assert_eq!(rd_mobile_host_state(next), 1);
+    assert_eq!(rd_mobile_host_stop(next), 0);
+    assert_eq!(rd_mobile_host_release(next), 0);
+    Config::set_option("custom-rendezvous-server".into(), saved_host);
+    Config::set_option("key".into(), saved_key);
+    Config::set_option("relay-server".into(), saved_relay);
+}
