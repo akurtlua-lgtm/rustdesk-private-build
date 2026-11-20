@@ -41,6 +41,7 @@ test -s target/aarch64-apple-ios-sim/release/liblibrustdesk.a
   cd flutter
   flutter pub get
   flutter build ios --simulator --debug --no-codesign --config-only \
+    --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true \
     --build-name "$VERSION" --build-number "$BUILD_NUMBER"
   cd ios
   pod install
@@ -50,6 +51,7 @@ if ! xcodebuild -workspace flutter/ios/Runner.xcworkspace -scheme Runner \
   -configuration Debug -sdk iphonesimulator \
   -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived" \
   RUSTDESK_IOS_APPLICATION_ID="$MOBILE_APPLICATION_ID" \
+  ARCHS=arm64 ONLY_ACTIVE_ARCH=YES ENABLE_DEBUG_DYLIB=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGN_ENTITLEMENTS= build \
   > "$RUNNER_TEMP/private-ios-xcode.log" 2>&1; then
   python3 .github/scripts/mobile_build_error.py "$RUNNER_TEMP/private-ios-xcode.log"

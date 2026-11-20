@@ -21,6 +21,7 @@ export GRADLE_OPTS="${GRADLE_OPTS:-} -Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle
 (
   cd flutter
   flutter build apk --release --target-platform android-arm64 \
+    --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true \
     --build-name "$VERSION" --build-number "$BUILD_NUMBER"
 )
 apk="mobile-output/rustdesk-$VERSION-android-arm64-unsigned.apk"

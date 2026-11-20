@@ -5947,3 +5947,7 @@ mod kx_tests {
         assert!(!seen.decrypted && !decrypted);
     }
 }
+
+#[cfg(all(test, target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+#[path = "client/mobile_host_tests.rs"]
+mod mobile_host_tests;

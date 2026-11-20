@@ -53,7 +53,15 @@ export LIBSODIUM_STATIC=1
 export PKG_CONFIG_ALLOW_CROSS_aarch64_unknown_linux_ohos=1
 export PKG_CONFIG_LIBDIR_aarch64_unknown_linux_ohos="$VCPKG_ROOT/installed/arm64-ohos/lib/pkgconfig"
 export PKG_CONFIG_LIBDIR_aarch64_apple_darwin="$VCPKG_ROOT/installed/arm64-osx/lib/pkgconfig"
-cargo build --locked --release --lib --target aarch64-unknown-linux-ohos --no-default-features --features use_dasp
+sharing_args=()
+features=use_dasp
+case "${RD_PRIVATE_MOBILE_SCREEN_SHARING:-false}" in
+  true) features=use_dasp,ohos-hostcore-compile-probe; sharing_args=(--screen-sharing) ;;
+  false) ;;
+  *) echo 'Invalid screen sharing build selection' >&2; exit 1 ;;
+esac
+python3 .github/scripts/configure_ohos_sharing.py "${RD_PRIVATE_MOBILE_SCREEN_SHARING:-false}"
+cargo build --locked --release --lib --target aarch64-unknown-linux-ohos --no-default-features --features "$features"
 mkdir -p harmonyos/entry/libs/arm64-v8a harmonyos/entry/oh_modules mobile-output
 cp target/aarch64-unknown-linux-ohos/release/liblibrustdesk.so harmonyos/entry/libs/arm64-v8a/
 cp "$native/llvm/lib/aarch64-linux-ohos/libc++_shared.so" harmonyos/entry/libs/arm64-v8a/
@@ -74,4 +82,4 @@ cp harmonyos/entry/build/default/outputs/default/entry-default-unsigned.hap "$ha
 python3 .github/scripts/verify_mobile_artifacts.py ohos "$hap" \
   --version "$VERSION" --build-number "$BUILD_NUMBER" --application-id "$MOBILE_APPLICATION_ID" \
   --readelf "$native/llvm/bin/llvm-readelf" --nm "$native/llvm/bin/llvm-nm" \
-  --metadata mobile-output/ohos-build.json
+  --metadata mobile-output/ohos-build.json "${sharing_args[@]}"

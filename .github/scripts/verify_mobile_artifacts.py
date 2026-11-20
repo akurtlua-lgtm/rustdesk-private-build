@@ -58,13 +58,14 @@ def verify_ios(path, version, build_number, application_id):
             raise ValueError('Simulator contains a non-ARM64 executable')
         if 'IOSSIMULATOR' not in run('xcrun', 'vtool', '-show-build', str(binary)):
             raise ValueError('Simulator bundle contains a device binary')
-    symbols = run('xcrun', 'nm', '-g', str(executable))
-    if '_session_get_rgba' not in symbols or '_dummy_method_to_enforce_bundling' not in symbols:
+    symbols = run('xcrun', 'nm', '-gU', str(executable))
+    required = ('session_get_rgba', 'wire_session_start', 'wire_session_login', 'wire_main_init')
+    if any(not re.search(r'\b_' + symbol + r'$', symbols, re.M) for symbol in required):
         raise ValueError('Simulator executable is missing the Rust session core')
     return {'platform': 'ios-simulator', 'architecture': 'arm64', 'physical_device_installable': False}
 
 
-def verify_ohos(path, version, build_number, application_id, readelf, nm):
+def verify_ohos(path, version, build_number, application_id, readelf, nm, screen_sharing=False):
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
         if len(names) != len(set(names)) or archive.testzip() is not None:
@@ -79,8 +80,17 @@ def verify_ohos(path, version, build_number, application_id, readelf, nm):
         if archive.read('ets/modules.abc')[:8] != b'PANDA\0\0\0':
             raise ValueError('HAP is missing compiled ArkTS bytecode')
         permissions = info['module'].get('requestPermissions', [])
-        if permissions != [{'name': 'ohos.permission.INTERNET'}]:
-            raise ValueError('Unexpected controller permissions')
+        expected_permissions = [{'name': 'ohos.permission.INTERNET'}]
+        if screen_sharing:
+            expected_permissions.append({'name': 'ohos.permission.KEEP_BACKGROUND_RUNNING'})
+        if permissions != expected_permissions:
+            raise ValueError('Unexpected mobile permissions')
+        abilities = info['module'].get('abilities', [])
+        if screen_sharing and (len(abilities) != 1 or abilities[0].get('name') != 'EntryAbility'
+                               or abilities[0].get('backgroundModes') != ['audioRecording']):
+            raise ValueError('Missing consent-gated recording background mode')
+        if not screen_sharing and any(ability.get('backgroundModes') for ability in abilities):
+            raise ValueError('Controller must not request background capture')
         libraries = {name for name in names if name.endswith('.so')}
         expected_libraries = {'libs/arm64-v8a/' + name for name in
                               ('libentry.so', 'liblibrustdesk.so', 'libc++_shared.so')}
@@ -110,10 +120,16 @@ def verify_ohos(path, version, build_number, application_id, readelf, nm):
                                 'view_only', 'account_request')
                     if any(not re.search(r'\brd_ohos_' + symbol + r'$', symbols, re.M) for symbol in required):
                         raise ValueError('HAP is missing the real controller/account ABI')
+                    if screen_sharing:
+                        host = ('initialize', 'set_password', 'configure_servers', 'servers', 'id',
+                                'begin', 'frame', 'stop', 'state', 'run', 'release')
+                        if any(not re.search(r'\brd_mobile_host_' + symbol + r'$', symbols, re.M) for symbol in host):
+                            raise ValueError('HAP is missing the consent-scoped sharing ABI')
                 if binary.name == 'libentry.so' and 'liblibrustdesk.so' not in needed:
                     raise ValueError('NAPI bridge is not linked to the Rust controller')
     return {'platform': 'ohos', 'architecture': 'arm64-v8a', 'signed': False,
-            'physical_device_verified': False, 'sdk_release_type': app.get('apiReleaseType'),
+            'physical_device_verified': False, 'screen_sharing_enabled': screen_sharing,
+            'system_screen_capture_verified': False, 'sdk_release_type': app.get('apiReleaseType'),
             'native_dependencies': dependencies}
 
 
@@ -127,6 +143,7 @@ def main():
     parser.add_argument('--aapt2')
     parser.add_argument('--readelf')
     parser.add_argument('--nm')
+    parser.add_argument('--screen-sharing', action='store_true')
     parser.add_argument('--metadata', type=Path, required=True)
     args = parser.parse_args()
     source = os.environ.get('GITHUB_SHA', '')
@@ -140,7 +157,7 @@ def main():
     elif args.platform == 'ohos':
         if not args.readelf or not args.nm:
             raise ValueError('SDK ELF inspection tools are required')
-        result = verify_ohos(args.artifact, args.version, args.build_number, args.application_id, args.readelf, args.nm)
+        result = verify_ohos(args.artifact, args.version, args.build_number, args.application_id, args.readelf, args.nm, args.screen_sharing)
         result.update(size=args.artifact.stat().st_size, sha256=hashlib.sha256(args.artifact.read_bytes()).hexdigest())
     else:
         result = verify_ios(args.artifact, args.version, args.build_number, args.application_id)

@@ -1,0 +1,37 @@
+// !$*UTF8*$!
+{
+    archiveVersion = 1;
+    classes = {};
+    objectVersion = 56;
+    objects = {
+        A00000000000000000000001 = {isa = PBXBuildFile; fileRef = A00000000000000000000002; };
+        A00000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleHandler.swift; sourceTree = "<group>"; };
+        A00000000000000000000003 = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = BroadcastProbe.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+        A00000000000000000000004 = {isa = PBXGroup; children = (A00000000000000000000002, A00000000000000000000005); sourceTree = "<group>"; };
+        A00000000000000000000005 = {isa = PBXGroup; children = (A00000000000000000000003); name = Products; sourceTree = "<group>"; };
+        A00000000000000000000006 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000001); runOnlyForDeploymentPostprocessing = 0; };
+        A00000000000000000000007 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+        A00000000000000000000008 = {isa = PBXNativeTarget; buildConfigurationList = A0000000000000000000000C; buildPhases = (A00000000000000000000006, A00000000000000000000007); buildRules = (); dependencies = (); name = BroadcastProbe; productName = BroadcastProbe; productReference = A00000000000000000000003; productType = "com.apple.product-type.app-extension"; };
+        A00000000000000000000009 = {isa = PBXProject; attributes = {LastUpgradeCheck = 1640; }; buildConfigurationList = A0000000000000000000000B; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A00000000000000000000004; productRefGroup = A00000000000000000000005; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000008); };
+        A0000000000000000000000A = {isa = XCBuildConfiguration; name = Release; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 15.0; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0; }; };
+        A0000000000000000000000B = {isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000A); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+        A0000000000000000000000C = {isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000D); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+        A0000000000000000000000D = {
+            isa = XCBuildConfiguration;
+            name = Release;
+            buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = YES;
+                CODE_SIGNING_ALLOWED = NO;
+                INFOPLIST_FILE = Info.plist;
+                PRODUCT_BUNDLE_IDENTIFIER = io.github.akurtlualgtm.rustdesk.broadcast-probe;
+                PRODUCT_NAME = BroadcastProbe;
+                MARKETING_VERSION = 1.5.14;
+                CURRENT_PROJECT_VERSION = 82;
+                SKIP_INSTALL = YES;
+                STRIP_INSTALLED_PRODUCT = NO;
+                OTHER_LDFLAGS = ("$(inherited)", "$(RUSTDESK_PROBE_LIBRARY)", "-Wl,-dead_strip", "-lc++", "-lsqlite3", "-framework", Security, "-framework", SystemConfiguration, "-framework", AVFoundation, "-framework", AudioToolbox, "-framework", CoreAudio, "-framework", CoreMedia, "-framework", CoreVideo, "-framework", CoreGraphics, "-framework", VideoToolbox);
+            };
+        };
+    };
+    rootObject = A00000000000000000000009;
+}

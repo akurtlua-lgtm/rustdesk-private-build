@@ -4,6 +4,11 @@ on:
   push:
     branches: ['codex/mobile-*']
   workflow_dispatch:
+    inputs:
+      publish_preview:
+        description: Publish a separately tagged mobile development preview after all mobile jobs pass
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -81,6 +86,11 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+      - name: Test mobile virtual mouse canvas coordinates
+        run: |
+          cd flutter
+          flutter pub get
+          flutter test --no-pub --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true test/floating_mouse_cursor_offset_test.dart test/private_mobile_update_channel_test.dart
       - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
         with:
           vcpkgDirectory: ${{ env.VCPKG_ROOT }}
@@ -101,6 +111,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 150
     env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
       RD_ID_SERVER: ${{ secrets.RD_ID_SERVER }}
       RD_RELAY_SERVER: ${{ secrets.RD_RELAY_SERVER }}
       RD_SERVER_PUBLIC_KEY: ${{ secrets.RD_SERVER_PUBLIC_KEY }}
@@ -131,6 +142,11 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           architecture: arm64
           cache: true
+      - name: Test mobile virtual mouse canvas coordinates
+        run: |
+          cd flutter
+          flutter pub get
+          flutter test --no-pub --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true test/floating_mouse_cursor_offset_test.dart test/private_mobile_update_channel_test.dart
       - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
         with:
           vcpkgDirectory: ${{ env.VCPKG_ROOT }}
@@ -138,8 +154,47 @@ jobs:
           doNotCache: false
       - name: Build, inspect and launch actual iOS simulator application
         run: bash .github/scripts/build_private_ios_simulator.sh
+      - name: Retain failed simulator diagnostics separately from verified applications
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: private-mobile-ios-failed-not-for-release
+          path: mobile-output/*
+          if-no-files-found: warn
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: private-mobile-ios-simulator-arm64
           path: mobile-output/*
           if-no-files-found: error
+
+  publish-mobile-preview:
+    needs: [mobile-config, android-arm64, ios-simulator-arm64]
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.publish_preview
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: private-mobile-android-arm64-unsigned
+          path: mobile-preview-input
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: private-mobile-ios-simulator-arm64
+          path: mobile-preview-input
+      - name: Prepare the pinned APK signing tools
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'build-tools;36.0.0'
+          echo "AAPT2=$ANDROID_HOME/build-tools/36.0.0/aapt2" >> "$GITHUB_ENV"
+          echo "APKSIGNER=$ANDROID_HOME/build-tools/36.0.0/apksigner" >> "$GITHUB_ENV"
+      - name: Sign verified payload and publish a separate prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RD_PRIVATE_ANDROID_KEYSTORE_BASE64: ${{ secrets.RD_PRIVATE_ANDROID_KEYSTORE_BASE64 }}
+          RD_PRIVATE_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.RD_PRIVATE_ANDROID_KEYSTORE_PASSWORD }}
+        run: python3 .github/scripts/mobile_preview_release.py

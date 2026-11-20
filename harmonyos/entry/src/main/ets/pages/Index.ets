@@ -3,6 +3,7 @@ import core from 'libentry.so';
 import { Lifecycle, lifecycle } from '../model/Lifecycle';
 import { Account } from '../model/Account';
 import { AccountPanel } from '../components/AccountPanel';
+import { SharingPanel } from '../components/SharingPanel';
 
 interface RemoteDisplay { x: number; y: number; width: number; height: number; }
 interface NativeEvent {
@@ -139,7 +140,8 @@ struct Index {
         TextInput({ placeholder: '远程设备 ID', text: this.peer }).onChange((value: string) => this.peer = value)
         TextInput({ placeholder: '设备密码（也可等待人工授权）', text: this.password }).type(InputType.Password).onChange((value: string) => this.password = value)
         Button('连接远程设备').enabled(this.ready && this.surfaceReady).onClick(() => this.connect())
-        Text('本阶段为原生控制端；手机屏幕共享尚未开放。连接仍需设备密码或人工授权。').fontSize(13).fontColor('#526174')
+        if (this.ready && core.sharingSupported()) SharingPanel()
+        Text('远程连接仍需设备密码或人工授权。').fontSize(13).fontColor('#526174')
       } else {
         Row({ space: 12 }) {
           Toggle({ type: ToggleType.Switch, isOn: this.viewOnly }).onChange((value: boolean) => {

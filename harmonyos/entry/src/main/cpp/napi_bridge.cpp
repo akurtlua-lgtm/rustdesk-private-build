@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "sharing.h"
 #include <napi/native_api.h>
 #include <array>
 #include <cstring>
@@ -242,7 +243,7 @@ napi_value module_init(napi_env env, napi_value exports) {
             return fail(env, "Cannot attach native surface");
         rustdesk::attach_surface(component);
     }
-    return exports;
+    return register_sharing(env, exports);
 }
 napi_module module{1, 0, nullptr, module_init, "entry", nullptr, {nullptr, nullptr, nullptr, nullptr}};
 }

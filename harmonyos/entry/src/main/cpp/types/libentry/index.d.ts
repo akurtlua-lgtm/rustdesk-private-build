@@ -10,3 +10,9 @@ export const key: (session: string, value: string, modifiers: number) => number;
 export const text: (session: string, value: string) => number;
 export const viewOnly: (session: string, enabled: boolean) => number;
 export const account: (operation: string, payload: string, token: string) => Promise<string>;
+export interface SharingStatus { phase: number; errorCode: number; deviceId: string; }
+export const sharingSupported: () => boolean;
+export const sharingPassword: (password: string) => number;
+export const sharingStart: (width: number, height: number) => number;
+export const sharingStop: () => Promise<number>;
+export const sharingStatus: () => SharingStatus;

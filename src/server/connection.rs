@@ -6,13 +6,13 @@ use super::login_failure_check::{
 use super::{input_service::*, *};
 #[cfg(feature = "unix-file-copy-paste")]
 use crate::clipboard::try_empty_clipboard_files;
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 use crate::clipboard::{update_clipboard, ClipboardSide};
-#[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos")), target_os = "macos"))]
 use crate::clipboard_file::*;
 #[cfg(target_os = "android")]
 use crate::keyboard::client::map_key_to_control_key;
-#[cfg(any(target_os = "windows", target_os = "linux"))]
+#[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos"))))]
 use crate::platform::WallPaperRemover;
 #[cfg(windows)]
 use crate::portable_service::client as portable_client;
@@ -22,8 +22,10 @@ use crate::{
     },
     display_service, ipc, privacy_mode, video_service, VERSION,
 };
-#[cfg(any(target_os = "android", target_os = "ios"))]
-use crate::{common::DEVICE_NAME, flutter::connection_manager::start_channel};
+#[cfg(any(target_os = "android", any(target_os = "ios", target_env = "ohos")))]
+use crate::common::DEVICE_NAME;
+#[cfg(target_os = "android")]
+use crate::flutter::connection_manager::start_channel;
 use cidr_utils::cidr::IpCidr;
 #[cfg(target_os = "android")]
 use hbb_common::protobuf::EnumOrUnknown;
@@ -50,8 +52,9 @@ use base::{
     fs::{self, can_enable_overwrite_detection, JobType},
     message_proto::{option_message::BoolOption, permission_info::Permission},
 };
-#[cfg(any(target_os = "android", target_os = "ios"))]
+#[cfg(target_os = "android")]
 use scrap::android::{call_main_service_key_event, call_main_service_pointer_input};
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 use scrap::camera;
 use serde_derive::Serialize;
 use serde_json::{json, value::Value};
@@ -66,7 +69,7 @@ use std::{
         mpsc as std_mpsc,
     },
 };
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 use system_shutdown;
 #[cfg(target_os = "windows")]
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
@@ -76,6 +79,8 @@ use crate::virtual_display_manager;
 pub type Sender = mpsc::UnboundedSender<(Instant, Arc<Message>)>;
 
 mod trusted_devices;
+#[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+mod mobile_view_only;
 
 const FAILURE_IDX_ID_WHITELIST: usize = 2;
 // How long a rejection counts, so also how long a blocked address stays blocked. Longer
@@ -196,16 +201,20 @@ lazy_static::lazy_static! {
     static ref ALIVE_CONNS: Arc::<Mutex<Vec<i32>>> = Default::default();
     pub static ref AUTHED_CONNS: Arc::<Mutex<Vec<AuthedConn>>> = Default::default();
     pub static ref CONTROL_PERMISSIONS_ARRAY: Arc::<Mutex<Vec<(i32, ControlPermissions)>>> = Default::default();
+}
+
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
+lazy_static::lazy_static! {
     static ref WAKELOCK_SENDER: Arc::<Mutex<std::sync::mpsc::Sender<(usize, usize)>>> = Arc::new(Mutex::new(start_wakelock_thread()));
     static ref WAKELOCK_KEEP_AWAKE_OPTION: Arc::<Mutex<Option<bool>>> = Default::default();
 }
 
 #[cfg(feature = "flutter")]
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 const SWITCH_SIDES_UUID_TTL: Duration = Duration::from_secs(10);
 
 #[cfg(feature = "flutter")]
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 lazy_static::lazy_static! {
     static ref SWITCH_SIDES_UUID: Arc::<Mutex<HashMap<String, (Instant, uuid::Uuid)>>> = Default::default();
     static ref PENDING_SWITCH_SIDES_UUID: Arc::<Mutex<HashMap<String, (Instant, uuid::Uuid, bool)>>> = Default::default();
@@ -226,17 +235,17 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     x == 0
 }
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 fn should_use_terminal_os_login_scope(is_terminal: bool, os_login_username: &str) -> bool {
     cfg!(target_os = "windows") && is_terminal && !os_login_username.trim().is_empty()
 }
 
-#[cfg(any(target_os = "windows", target_os = "linux"))]
+#[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos"))))]
 lazy_static::lazy_static! {
     static ref WALLPAPER_REMOVER: Arc<Mutex<Option<WallPaperRemover>>> = Default::default();
 }
 pub static CLICK_TIME: AtomicI64 = AtomicI64::new(0);
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 pub static MOUSE_MOVE_TIME: AtomicI64 = AtomicI64::new(0);
 
 #[derive(Clone, Default)]
@@ -256,11 +265,11 @@ struct InputMouse {
 }
 
 enum MessageInput {
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     Mouse(InputMouse),
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     Key((KeyEvent, bool)),
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     Pointer((PointerDeviceEvent, i32)),
     BlockOn,
     BlockOff,
@@ -280,7 +289,7 @@ struct Session {
     tfa: bool,
 }
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 struct StartCmIpcPara {
     rx_to_cm: mpsc::UnboundedReceiver<ipc::Data>,
     tx_from_cm: mpsc::UnboundedSender<ipc::Data>,
@@ -337,7 +346,7 @@ impl ConnAuditTwoFactor {
     }
 }
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 #[derive(Clone, Debug)]
 enum TerminalUserToken {
     SelfUser,
@@ -345,7 +354,7 @@ enum TerminalUserToken {
     CurrentLogonUser(crate::terminal_service::UserToken),
 }
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 impl TerminalUserToken {
     fn to_terminal_service_token(&self) -> Option<crate::terminal_service::UserToken> {
         match self {
@@ -360,6 +369,8 @@ pub struct Connection {
     display_idx: usize,
     stream: super::Stream,
     server: super::ServerPtrWeak,
+    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+    capture_source: Arc<scrap::mobile_frame::FrameInbox>,
     hash: Hash,
     read_jobs: Vec<fs::TransferJob>,
     timer: crate::RustDeskInterval,
@@ -395,14 +406,14 @@ pub struct Connection {
     // by peer
     disable_keyboard: bool,
     // by peer
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     show_my_cursor: bool,
     // by peer
     disable_clipboard: bool,
     // by peer
     disable_audio: bool,
     // by peer
-    #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos")), target_os = "macos"))]
     enable_file_transfer: bool,
     // by peer
     audio_sender: Option<MediaSender>,
@@ -427,10 +438,10 @@ pub struct Connection {
     voice_call_request_timestamp: Option<NonZeroI64>,
     voice_calling: bool,
     options_in_login: Option<OptionMessage>,
-    #[cfg(not(any(target_os = "ios")))]
+    #[cfg(not(any(any(target_os = "ios", target_env = "ohos"))))]
     pressed_modifiers: HashSet<rdev::Key>,
     closed: bool,
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     start_cm_ipc_para: Option<StartCmIpcPara>,
     auto_disconnect_timer: Option<(Instant, u64)>,
     authed_conn_id: Option<self::raii::AuthedConnID>,
@@ -462,7 +473,7 @@ pub struct Connection {
     // The user token must be set when terminal is enabled.
     // 0 indicates SYSTEM user
     // other values indicate current user
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     terminal_user_token: Option<TerminalUserToken>,
     terminal_generic_service: Option<Box<GenericService>>,
 }
@@ -512,13 +523,13 @@ const SESSION_TIMEOUT: Duration = Duration::from_secs(30);
 /// Whether the DRM backend can serve a Wayland login screen here.
 ///
 /// A cold cache probes off-thread; admission still requires a definitive `Available` verdict.
-#[cfg(all(target_os = "linux", feature = "drm"))]
+#[cfg(all(all(target_os = "linux", not(target_env = "ohos")), feature = "drm"))]
 fn drm_can_serve_login_screen() -> bool {
     super::drm_capturer::availability_cached() == super::drm_capturer::Availability::Available
 }
 
 /// Without the feature nothing can capture a Wayland greeter, so the refusal stands.
-#[cfg(all(target_os = "linux", not(feature = "drm")))]
+#[cfg(all(all(target_os = "linux", not(target_env = "ohos")), not(feature = "drm")))]
 fn drm_can_serve_login_screen() -> bool {
     false
 }
@@ -556,13 +567,22 @@ impl Connection {
         let (tx_video, mut rx_video) = mpsc::unbounded_channel::<(Instant, Arc<Message>)>();
         let (tx_input, _rx_input) = std_mpsc::channel();
         let (tx_from_authed, mut rx_from_authed) = mpsc::unbounded_channel::<ipc::Data>();
+        #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
         let mut hbbs_rx = crate::hbbs_http::sync::signal_receiver();
+        #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+        let Some(mut hbbs_rx) = super::mobile_host::stop_receiver(&server, id) else {
+            return;
+        };
+        #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+        let Some(capture_source) = super::mobile_host::source_for(&server) else {
+            return;
+        };
         let (tx_post_seq, rx_post_seq) = mpsc::unbounded_channel();
         tokio::spawn(async move {
             Self::post_seq_loop(rx_post_seq).await;
         });
 
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         let tx_cloned = tx.clone();
         let mut conn = Self {
             inner: ConnInner {
@@ -578,6 +598,8 @@ impl Connection {
             display_idx: 0,
             stream,
             server,
+            #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+            capture_source,
             hash,
             read_jobs: Vec::new(),
             timer: crate::rustdesk_interval(time::interval(SEC30)),
@@ -610,11 +632,11 @@ impl Connection {
             multi_ui_session: false,
             ip: "".to_owned(),
             disable_audio: false,
-            #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
+            #[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos")), target_os = "macos"))]
             enable_file_transfer: false,
             disable_clipboard: false,
             disable_keyboard: false,
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             show_my_cursor: false,
             tx_input,
             video_ack_required: false,
@@ -634,10 +656,10 @@ impl Connection {
             voice_call_request_timestamp: None,
             voice_calling: false,
             options_in_login: None,
-            #[cfg(not(any(target_os = "ios")))]
+            #[cfg(not(any(any(target_os = "ios", target_env = "ohos"))))]
             pressed_modifiers: Default::default(),
             closed: false,
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             start_cm_ipc_para: Some(StartCmIpcPara {
                 rx_to_cm,
                 tx_from_cm,
@@ -657,19 +679,24 @@ impl Connection {
             terminal_service_id: "".to_owned(),
             terminal_persistent: false,
             scope_violation_messages: HashSet::new(),
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             terminal_user_token: None,
             terminal_generic_service: None,
             conn_audit_primary_auth: ConnAuditPrimaryAuth::None,
             conn_audit_two_factor: ConnAuditTwoFactor::None,
         };
+        #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+        mobile_view_only::restrict_permissions(&mut conn);
         let addr = hbb_common::try_into_v4(addr);
+        #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
         if !conn.on_open(addr).await {
             conn.closed = true;
             // sleep to ensure msg got received.
             sleep(1.).await;
             return;
         }
+        #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
+        {
         #[cfg(target_os = "android")]
         start_channel(rx_to_cm, tx_from_cm);
         #[cfg(target_os = "android")]
@@ -700,6 +727,11 @@ impl Connection {
         if !conn.privacy_mode {
             conn.send_permission(Permission::PrivacyMode, false).await;
         }
+        }
+        #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+        if !conn.initialize_mobile(&mut hbbs_rx, addr).await {
+            return;
+        }
         let mut test_delay_timer =
             crate::rustdesk_interval(time::interval_at(Instant::now(), TEST_DELAY_TIMEOUT));
         let mut last_recv_time = Instant::now();
@@ -709,7 +741,7 @@ impl Connection {
         // `on_message` picks the type-specific timeout then.
         conn.stream.set_send_timeout(SEND_TIMEOUT_VIDEO);
 
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         std::thread::spawn(move || Self::handle_input(_rx_input, tx_cloned));
         let mut second_timer = crate::rustdesk_interval(time::interval(Duration::from_secs(1)));
 
@@ -775,7 +807,7 @@ impl Connection {
                         // send the manual close reason: it is the one thing that stops the peer
                         // from retrying, and on a logout the retry is the whole point - it is
                         // what puts the peer back on the login screen a moment later.
-                        #[cfg(target_os = "linux")]
+                        #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
                         ipc::Data::CmWindowClosed => {
                             conn.chat_unanswered = false; // seen
                             conn.file_transferred = false; //seen
@@ -971,7 +1003,7 @@ impl Connection {
                             }
                         }
                         #[cfg(feature = "flutter")]
-                        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                         ipc::Data::SwitchSidesBack => {
                             let mut misc = Misc::new();
                             misc.set_switch_back(SwitchBack::default());
@@ -1033,8 +1065,18 @@ impl Connection {
                                 last_recv_time = Instant::now();
                                 conn.session_last_recv_time.as_mut().map(|t| *t.lock().unwrap() = Instant::now());
                                 if let Ok(msg_in) = Message::parse_from_bytes(&bytes) {
+                                    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                                     if !conn.on_message(msg_in).await {
                                         break;
+                                    }
+                                    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                                    match hbbs_rx.until(conn.on_message(msg_in)).await {
+                                        Some(true) => {}
+                                        Some(false) => break,
+                                        None => {
+                                            conn.cancel_mobile_session().await;
+                                            break;
+                                        }
                                     }
                                     if conn.port_forward_socket.is_some() && conn.authorized {
                                         log::info!("Port forward, last_test_delay is none: {}", conn.last_test_delay.is_none());
@@ -1071,8 +1113,15 @@ impl Connection {
                 }
                 Ok(conns) = hbbs_rx.recv() => {
                     if conns.contains(&id) {
-                        conn.send_close_reason_no_retry("Closed manually by web console").await;
-                        conn.on_close("web console", true).await;
+                        #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
+                        {
+                            conn.send_close_reason_no_retry("Closed manually by web console").await;
+                            conn.on_close("web console", true).await;
+                        }
+                        #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                        {
+                            conn.cancel_mobile_session().await;
+                        }
                         break;
                     }
                 }
@@ -1082,8 +1131,13 @@ impl Connection {
                             video_service::notify_video_frame_fetched(vf.display as usize, id, Some(instant.into()));
                         }
                     }
+                    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                     if let Err(err) = conn.stream.send(&value as &Message).await {
                         conn.on_close(&err.to_string(), false).await;
+                        break;
+                    }
+                    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                    if !conn.send_mobile(&mut hbbs_rx, &value).await {
                         break;
                     }
                 },
@@ -1105,7 +1159,12 @@ impl Connection {
                         Some(message::Union::Misc(m)) => {
                             match &m.union {
                                 Some(misc::Union::StopService(_)) => {
+                                    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                                     conn.send_close_reason_no_retry("").await;
+                                    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                                    if !conn.notify_mobile_close(&mut hbbs_rx, "").await {
+                                        break;
+                                    }
                                     conn.on_close("stop service", false).await;
                                     break;
                                 }
@@ -1118,7 +1177,7 @@ impl Connection {
                             conn.retina.set_displays(&_pi.displays);
                         }
                         Some(message::Union::CursorPosition(pos)) => {
-                            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                             {
                                 if conn.follow_remote_cursor {
                                     conn.handle_cursor_switch_display(pos.clone()).await;
@@ -1130,7 +1189,7 @@ impl Connection {
                             }
                         }
                         Some(message::Union::MultiClipboards(_multi_clipboards)) => {
-                            #[cfg(not(target_os = "ios"))]
+                            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                             if let Some(msg_out) = crate::clipboard::get_msg_if_not_support_multi_clip(&conn.lr.version, &conn.lr.my_platform, _multi_clipboards) {
                                 if let Err(err) = conn.stream.send(&msg_out).await {
                                     conn.on_close(&err.to_string(), false).await;
@@ -1143,18 +1202,31 @@ impl Connection {
                     }
 
                     let msg: &Message = &msg;
+                    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                     if let Err(err) = conn.stream.send(msg).await {
                         conn.on_close(&err.to_string(), false).await;
+                        break;
+                    }
+                    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                    if !conn.send_mobile(&mut hbbs_rx, msg).await {
                         break;
                     }
                 },
                 Some(data) = rx_from_authed.recv() => {
                     match data {
                         ipc::Data::Close => {
+                            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                             conn.send(crate::common::make_privacy_mode_msg(
                                 back_notification::PrivacyModeState::PrvOnByOther,
                                 String::new(),
                             )).await;
+                            #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                            if !conn.send_mobile_notice(&mut hbbs_rx, crate::common::make_privacy_mode_msg(
+                                back_notification::PrivacyModeState::PrvOnByOther,
+                                String::new(),
+                            )).await {
+                                break;
+                            }
                             conn.on_close("privacy mode", false).await;
                             break;
                         }
@@ -1172,10 +1244,16 @@ impl Connection {
                 _ = second_timer.tick() => {
                     #[cfg(windows)]
                     conn.portable_check();
+                    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                     raii::AuthedConnID::check_wake_lock_on_setting_changed();
                     if let Some((instant, minute)) = conn.auto_disconnect_timer.as_ref() {
                         if instant.elapsed().as_secs() > minute * 60 {
+                            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                             conn.send_close_reason_no_retry("Connection failed due to inactivity").await;
+                            #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                            if !conn.notify_mobile_close(&mut hbbs_rx, "Connection failed due to inactivity").await {
+                                break;
+                            }
                             conn.on_close("auto disconnect", true).await;
                             break;
                         }
@@ -1198,7 +1276,12 @@ impl Connection {
                             target_bitrate: video_service::VIDEO_QOS.lock().unwrap().bitrate(),
                             ..Default::default()
                         });
+                        #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                         conn.send(msg_out.into()).await;
+                        #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                        if !conn.send_mobile_notice(&mut hbbs_rx, msg_out).await {
+                            break;
+                        }
                     }
                     if conn.is_authed_remote_conn() || conn.view_camera {
                         if let Some(last_test_delay) = conn.last_test_delay {
@@ -1226,6 +1309,8 @@ impl Connection {
             conn.try_empty_file_clipboard();
         }
 
+        #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+        raii::AuthedConnID::check_remove_session(conn.inner.id(), conn.session_key());
         if let Some(video_privacy_conn_id) = privacy_mode::get_privacy_mode_conn_id() {
             if video_privacy_conn_id == id {
                 let _ = Self::turn_off_privacy_to_msg(id, String::new());
@@ -1243,14 +1328,14 @@ impl Connection {
         if let Some(s) = conn.server.upgrade() {
             let mut s = s.write().unwrap();
             s.remove_connection(&conn.inner);
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             try_stop_record_cursor_pos();
         }
         conn.on_close("End", true).await;
         log::info!("#{} connection loop exited", id);
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     fn handle_input(receiver: std_mpsc::Receiver<MessageInput>, tx: Sender) {
         let mut block_input_mode = false;
         #[cfg(any(target_os = "windows", target_os = "macos"))]
@@ -1323,7 +1408,7 @@ impl Connection {
                 }
             }
         }
-        #[cfg(target_os = "linux")]
+        #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
         clear_remapped_keycode();
         log::debug!("Input thread exited");
     }
@@ -1335,6 +1420,7 @@ impl Connection {
         log::debug!("post_seq_loop exited");
     }
 
+    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
     async fn try_port_forward_loop(
         &mut self,
         rx_from_cm: &mut mpsc::UnboundedReceiver<Data>,
@@ -1354,7 +1440,7 @@ impl Connection {
                             // Same end as above: a tunnel must not outlive the window either.
                             // Only the reason differs, and a port forward carries none - the
                             // peer sees the tunnel drop and decides for itself.
-                            #[cfg(target_os = "linux")]
+                            #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
                             ipc::Data::CmWindowClosed => {
                                 bail!("Connection manager window closed");
                             }
@@ -1508,7 +1594,7 @@ impl Connection {
         if !self.check_whitelist(&addr).await {
             return false;
         }
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         if crate::is_server() && Config::get_option("allow-only-conn-window-open") == "Y" {
             if !crate::check_process("", !crate::platform::is_root()) {
                 self.send_login_error("The main window is not open").await;
@@ -1947,7 +2033,10 @@ impl Connection {
         }
         self.post_conn_audit(audit);
         #[allow(unused_mut)]
+        #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
         let mut username = crate::platform::get_active_username();
+        #[cfg(any(target_os = "ios", target_env = "ohos"))]
+        let username = DEVICE_NAME.lock().unwrap().clone();
         let mut res = LoginResponse::new();
         let mut pi = PeerInfo {
             username: username.clone(),
@@ -1955,7 +2044,7 @@ impl Connection {
             ..Default::default()
         };
 
-        #[cfg(not(target_os = "android"))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         {
             pi.hostname = crate::whoami_hostname();
             pi.platform = hbb_common::whoami::platform().to_string();
@@ -1965,15 +2054,20 @@ impl Connection {
             pi.hostname = DEVICE_NAME.lock().unwrap().clone();
             pi.platform = "Android".into();
         }
+        #[cfg(any(target_os = "ios", target_env = "ohos"))]
+        {
+            pi.hostname = DEVICE_NAME.lock().unwrap().clone();
+            pi.platform = if cfg!(target_env = "ohos") { "HarmonyOS" } else { "iOS" }.into();
+        }
         #[cfg(all(target_os = "macos", not(feature = "unix-file-copy-paste")))]
         let mut platform_additions = serde_json::Map::new();
         #[cfg(any(
             target_os = "windows",
-            target_os = "linux",
+            all(target_os = "linux", not(target_env = "ohos")),
             all(target_os = "macos", feature = "unix-file-copy-paste")
         ))]
         let mut platform_additions = serde_json::Map::new();
-        #[cfg(target_os = "linux")]
+        #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
         {
             if crate::platform::current_is_wayland() {
                 platform_additions.insert("is_wayland".into(), json!(true));
@@ -2019,12 +2113,12 @@ impl Connection {
             platform_additions.insert("has_file_clipboard".into(), json!(has_file_clipboard));
         }
 
-        #[cfg(any(target_os = "windows", target_os = "linux"))]
+        #[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos"))))]
         {
             platform_additions.insert("support_view_camera".into(), json!(true));
         }
 
-        #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
+        #[cfg(any(all(target_os = "linux", not(target_env = "ohos")), target_os = "windows", target_os = "macos"))]
         if !platform_additions.is_empty() {
             pi.platform_additions = serde_json::to_string(&platform_additions).unwrap_or("".into());
         }
@@ -2044,7 +2138,7 @@ impl Connection {
             self.send(msg_out).await;
             return true;
         }
-        #[cfg(target_os = "linux")]
+        #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
         if self.is_remote() {
             let mut msg = "".to_string();
             #[cfg(feature = "drm")]
@@ -2079,7 +2173,7 @@ impl Connection {
         if crate::platform::is_root() {
             sas_enabled = true;
         }
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         if self.file_transfer.is_some() {
             if crate::platform::is_prelogin() {
                 // }|| self.tx_to_cm.send(ipc::Data::Test).is_err() {
@@ -2088,7 +2182,7 @@ impl Connection {
         }
         // Terminal feature is supported on desktop only
         #[allow(unused_mut)]
-        let mut terminal = cfg!(not(any(target_os = "android", target_os = "ios")));
+        let mut terminal = cfg!(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))));
         #[cfg(target_os = "windows")]
         {
             terminal = terminal && portable_pty::win::check_support().is_ok();
@@ -2097,7 +2191,7 @@ impl Connection {
         pi.sas_enabled = sas_enabled;
         pi.features = Some(Features {
             privacy_mode: privacy_mode::is_privacy_mode_supported(),
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             terminal,
             ..Default::default()
         })
@@ -2113,6 +2207,13 @@ impl Connection {
         if self.file_transfer.is_some() || self.terminal {
             res.set_peer_info(pi);
         } else if self.view_camera {
+            #[cfg(any(target_os = "ios", target_env = "ohos"))]
+            {
+                self.send_login_error("Camera sessions are unsupported on iOS").await;
+                return false;
+            }
+            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
+            {
             let supported_encoding = scrap::codec::Encoder::supported_encoding();
             self.last_supported_encoding = Some(supported_encoding.clone());
             log::info!("peer info supported_encoding: {:?}", supported_encoding);
@@ -2120,7 +2221,7 @@ impl Connection {
 
             pi.displays = camera::Cameras::all_info().unwrap_or(Vec::new());
             pi.current_display = camera::PRIMARY_CAMERA_IDX as _;
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             {
                 pi.resolutions = Some(SupportedResolutions {
                     resolutions: camera::Cameras::get_camera_resolution(
@@ -2135,6 +2236,7 @@ impl Connection {
             }
             res.set_peer_info(pi);
             self.update_codec_on_login();
+            }
         } else {
             let supported_encoding = scrap::codec::Encoder::supported_encoding();
             self.last_supported_encoding = Some(supported_encoding.clone());
@@ -2161,7 +2263,7 @@ impl Connection {
                     self.display_idx = primary_display_idx;
                     pi.displays = displays;
                     pi.current_display = self.display_idx as _;
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     {
                         pi.resolutions = Some(SupportedResolutions {
                             resolutions: pi
@@ -2176,7 +2278,7 @@ impl Connection {
                     res.set_peer_info(pi);
                     sub_service = true;
 
-                    #[cfg(target_os = "linux")]
+                    #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
                     {
                         // use rdp_input when uinput is not available in wayland. Ex: flatpak
                         if input_service::wayland_use_rdp_input() {
@@ -2220,9 +2322,10 @@ impl Connection {
             }
         } else if self.terminal {
             self.keyboard = false;
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             self.init_terminal_service().await;
         } else if self.view_camera {
+            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
             if !wait_session_id_confirm {
                 self.try_sub_camera_displays();
             }
@@ -2236,6 +2339,7 @@ impl Connection {
         true
     }
 
+    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
     fn try_sub_camera_displays(&mut self) {
         if let Some(s) = self.server.upgrade() {
             let mut s = s.write().unwrap();
@@ -2284,10 +2388,16 @@ impl Connection {
                     noperms.push(super::audio_service::NAME);
                 }
                 let mut s = s.write().unwrap();
-                #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                 let _h = try_start_record_cursor_pos();
                 self.auto_disconnect_timer = Self::get_auto_disconenct_timer();
+                #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                 s.try_add_monitor_service(self.display_idx);
+                #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                if let Err(error) = self.add_mobile_monitor_service(&mut s) {
+                    log::trace!("Capture source unavailable: {error}");
+                    return;
+                }
                 s.add_monitor_connection(self.inner.clone(), &noperms, self.display_idx);
             }
         }
@@ -2321,7 +2431,7 @@ impl Connection {
 
     fn on_remote_authorized(&self) {
         self.update_codec_on_login();
-        #[cfg(any(target_os = "windows", target_os = "linux"))]
+        #[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos"))))]
         if config::option2bool(
             "allow-remove-wallpaper",
             &Config::get_option("allow-remove-wallpaper"),
@@ -2445,7 +2555,7 @@ impl Connection {
     }
 
     #[inline]
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     fn input_mouse(
         &self,
         msg: MouseEvent,
@@ -2468,7 +2578,7 @@ impl Connection {
     }
 
     #[inline]
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     fn input_pointer(&self, msg: PointerDeviceEvent, conn_id: i32) {
         self.tx_input
             .send(MessageInput::Pointer((msg, conn_id)))
@@ -2476,7 +2586,7 @@ impl Connection {
     }
 
     #[inline]
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     fn input_key(&self, msg: KeyEvent, press: bool) {
         // to-do: if is the legacy mode, and the key is function key "LockScreen".
         // Switch to the primary display.
@@ -2695,7 +2805,7 @@ impl Connection {
     #[inline]
     pub fn is_permission_enabled_locally(enable_prefix_option: &str) -> bool {
         #[cfg(feature = "flutter")]
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         {
             let access_mode = Config::get_option("access-mode");
             if access_mode == "full" {
@@ -2858,7 +2968,7 @@ impl Connection {
         self.video_ack_required = lr.video_ack_required;
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     fn try_start_cm_ipc(&mut self) {
         if let Some(p) = self.start_cm_ipc_para.take() {
             tokio::spawn(async move {
@@ -2886,6 +2996,14 @@ impl Connection {
     }
 
     async fn on_message(&mut self, msg: Message) -> bool {
+        #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+        let msg = match base::mobile_host_policy::restrict_view_only_message(msg) {
+            Ok(message) => message,
+            Err(reason) => {
+                self.on_close(reason, true).await;
+                return false;
+            }
+        };
         if let Some(message::Union::Misc(misc)) = &msg.union {
             // Move the CloseReason forward, as this message needs to be received when unauthorized, especially for kcp.
             if let Some(misc::Union::CloseReason(s)) = &misc.union {
@@ -3011,7 +3129,7 @@ impl Connection {
                 return false;
             }
 
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             if !should_use_terminal_os_login_scope(self.terminal, &lr.os_login.username) {
                 self.try_start_cm_ipc();
             }
@@ -3031,9 +3149,9 @@ impl Connection {
                     }
                 }
             };
-            #[cfg(any(target_os = "linux", target_os = "macos"))]
+            #[cfg(any(all(target_os = "linux", not(target_env = "ohos")), target_os = "macos"))]
             let is_logon = || crate::platform::is_prelogin() || crate::platform::is_locked();
-            #[cfg(any(target_os = "android", target_os = "ios"))]
+            #[cfg(any(target_os = "android", any(target_os = "ios", target_env = "ohos")))]
             let is_logon = || crate::platform::is_prelogin();
 
             let allow_logon_screen_password =
@@ -3043,7 +3161,7 @@ impl Connection {
             if (password::approve_mode() == ApproveMode::Click && !allow_logon_screen_password)
                 || password::approve_mode() == ApproveMode::Both && !password::has_valid_password()
             {
-                #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                 if should_use_terminal_os_login_scope(self.terminal, &lr.os_login.username) {
                     if let Some(keep_alive) = self.prepare_terminal_login_for_authorization().await
                     {
@@ -3064,7 +3182,7 @@ impl Connection {
                 }
                 self.try_start_cm(lr.my_id.clone(), lr.my_name.clone(), self.authorized);
             } else if lr.password.is_empty() {
-                #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                 if should_use_terminal_os_login_scope(self.terminal, &lr.os_login.username) {
                     if let Some(keep_alive) = self.prepare_terminal_login_for_authorization().await
                     {
@@ -3147,7 +3265,7 @@ impl Connection {
             }
         } else if let Some(message::Union::SwitchSidesResponse(_s)) = msg.union {
             #[cfg(feature = "flutter")]
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             if let Some(lr) = _s.lr.clone().take() {
                 SWITCH_SIDES_UUID
                     .lock()
@@ -3182,7 +3300,7 @@ impl Connection {
                                 lr.my_name.clone(),
                                 self.authorized,
                             );
-                            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                             self.try_start_cm_ipc();
                         }
                     }
@@ -3198,11 +3316,11 @@ impl Connection {
                     if self.is_authed_view_camera_conn() {
                         return true;
                     }
-                    #[cfg(any(target_os = "android", target_os = "ios"))]
+                    #[cfg(target_os = "android")]
                     if let Err(e) = call_main_service_pointer_input("mouse", me.mask, me.x, me.y) {
                         log::debug!("call_main_service_pointer_input fail:{}", e);
                     }
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     if self.peer_keyboard_enabled() {
                         if is_left_up(&me) {
                             CLICK_TIME.store(get_time(), Ordering::SeqCst);
@@ -3237,7 +3355,7 @@ impl Connection {
                     if self.is_authed_view_camera_conn() {
                         return true;
                     }
-                    #[cfg(any(target_os = "android", target_os = "ios"))]
+                    #[cfg(target_os = "android")]
                     if let Err(e) = match pde.union {
                         Some(pointer_device_event::Union::TouchEvent(touch)) => match touch.union {
                             Some(touch_event::Union::PanStart(pan_start)) => {
@@ -3265,14 +3383,14 @@ impl Connection {
                     } {
                         log::debug!("call_main_service_pointer_input fail:{}", e);
                     }
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     if self.peer_keyboard_enabled() {
                         MOUSE_MOVE_TIME.store(get_time(), Ordering::SeqCst);
                         self.input_pointer(pde, self.inner.id());
                     }
                     self.update_auto_disconnect_timer();
                 }
-                #[cfg(any(target_os = "ios"))]
+                #[cfg(any(any(target_os = "ios", target_env = "ohos")))]
                 Some(message::Union::KeyEvent(..)) => {}
                 #[cfg(any(target_os = "android"))]
                 Some(message::Union::KeyEvent(mut me)) => {
@@ -3329,7 +3447,7 @@ impl Connection {
                         }
                     }
                 }
-                #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                 Some(message::Union::KeyEvent(me)) => {
                     if self.is_authed_view_camera_conn() {
                         return true;
@@ -3360,7 +3478,7 @@ impl Connection {
                         // fix unexpected repeating key on remote linux, seems also fix abnormal alt/shift, which
                         // make sure all key are released
                         // https://github.com/rustdesk/rustdesk/issues/6793
-                        let is_press = if cfg!(target_os = "linux") {
+                        let is_press = if cfg!(all(target_os = "linux", not(target_env = "ohos"))) {
                             (me.press || me.down) && !(crate::is_modifier(&me) || key.is_some())
                         } else {
                             me.press
@@ -3399,7 +3517,7 @@ impl Connection {
                 }
                 Some(message::Union::Clipboard(cb)) => {
                     if self.should_handle_text_clipboard_message() && self.clipboard_enabled() {
-                        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                         update_clipboard(vec![cb], ClipboardSide::Host);
                         // ios as the controlled side is actually not supported for now.
                         // The following code is only used to preserve the logic of handling text clipboard on mobile.
@@ -3427,7 +3545,7 @@ impl Connection {
                 }
                 Some(message::Union::MultiClipboards(_mcb)) => {
                     if self.should_handle_text_clipboard_message() && self.clipboard_enabled() {
-                        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                         update_clipboard(_mcb.clipboards, ClipboardSide::Host);
                         #[cfg(target_os = "android")]
                         crate::clipboard::handle_msg_multi_clipboards(_mcb);
@@ -3953,15 +4071,15 @@ impl Connection {
                         );
                     }
                     Some(misc::Union::RestartRemoteDevice(_)) => {
-                        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                         if self.restart {
                             // force_reboot, not work on linux vm and macos 14
-                            #[cfg(any(target_os = "linux", target_os = "windows"))]
+                            #[cfg(any(all(target_os = "linux", not(target_env = "ohos")), target_os = "windows"))]
                             match system_shutdown::force_reboot() {
                                 Ok(_) => log::info!("Restart by the peer"),
                                 Err(e) => log::error!("Failed to restart: {}", e),
                             }
-                            #[cfg(any(target_os = "linux", target_os = "macos"))]
+                            #[cfg(any(all(target_os = "linux", not(target_env = "ohos")), target_os = "macos"))]
                             match system_shutdown::reboot() {
                                 Ok(_) => log::info!("Restart by the peer"),
                                 Err(e) => log::error!("Failed to restart: {}", e),
@@ -3993,7 +4111,7 @@ impl Connection {
                         }
                     }
                     #[cfg(feature = "flutter")]
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     Some(misc::Union::SwitchSidesRequest(s)) => {
                         if let Ok(uuid) = uuid::Uuid::from_slice(&s.uuid.to_vec()[..]) {
                             if crate::server::insert_pending_switch_sides_uuid(
@@ -4012,13 +4130,13 @@ impl Connection {
                             return false;
                         }
                     }
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     Some(misc::Union::ChangeResolution(r)) => {
                         if !self.view_camera {
                             self.change_resolution(None, &r);
                         }
                     }
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     Some(misc::Union::ChangeDisplayResolution(dr)) => {
                         if !self.view_camera {
                             self.change_resolution(Some(dr.display as _), &dr.resolution);
@@ -4071,7 +4189,7 @@ impl Connection {
                         }
                     }
                     // Only to a connection the cursor service would send the shape to.
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     Some(misc::Union::RequestCursorData(id)) => {
                         if self.is_remote()
                             && (self.peer_keyboard_enabled() || self.show_remote_cursor)
@@ -4122,9 +4240,9 @@ impl Connection {
                 }
                 Some(message::Union::PortForwardChannel(ch)) => self.handle_port_forward_channel(ch),
                 Some(message::Union::TerminalAction(action)) => {
-                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                     allow_err!(self.handle_terminal_action(action).await);
-                    #[cfg(any(target_os = "android", target_os = "ios"))]
+                    #[cfg(any(target_os = "android", any(target_os = "ios", target_env = "ohos")))]
                     log::warn!("Terminal action received but not supported on this platform");
                 }
                 _ => {}
@@ -4133,7 +4251,7 @@ impl Connection {
         true
     }
 
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(all(target_os = "linux", not(target_env = "ohos")), target_os = "macos"))]
     fn fill_terminal_user_token(
         &mut self,
         _username: &str,
@@ -4234,7 +4352,7 @@ impl Connection {
         }
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     async fn prepare_terminal_login_for_authorization(&mut self) -> Option<bool> {
         if !self.terminal || self.terminal_user_token.is_some() {
             return None;
@@ -4369,7 +4487,7 @@ impl Connection {
         None
     }
 
-    #[cfg(any(target_os = "android", target_os = "ios"))]
+    #[cfg(any(target_os = "android", any(target_os = "ios", target_env = "ohos")))]
     async fn prepare_terminal_login_for_authorization(&mut self) -> Option<bool> {
         None
     }
@@ -4611,7 +4729,7 @@ impl Connection {
                     return;
                 }
 
-                #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                 if !self.view_camera && s.width != 0 && s.height != 0 {
                     self.change_resolution(
                         None,
@@ -4639,7 +4757,10 @@ impl Connection {
     fn video_source_count(video_source: VideoSource) -> usize {
         match video_source {
             VideoSource::Monitor => display_service::get_sync_displays().len(),
+            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
             VideoSource::Camera => camera::Cameras::get_sync_cameras().len(),
+            #[cfg(any(target_os = "ios", target_env = "ohos"))]
+            VideoSource::Camera => 0,
         }
     }
 
@@ -4669,10 +4790,16 @@ impl Connection {
             video_service::get_service_name(self.video_source(), self.display_idx);
         let mut lock = server.write().unwrap();
         if !lock.contains(&new_service_name) {
+            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
             lock.add_service(Box::new(video_service::new(
                 self.video_source(),
                 display_idx,
             )));
+            #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+            if let Err(error) = self.add_mobile_monitor_service(&mut lock) {
+                log::trace!("Capture source unavailable: {error}");
+                return false;
+            }
         }
         // For versions greater than 1.2.4, a `CaptureDisplays` message will be sent immediately.
         // Unnecessary capturers will be removed then.
@@ -4748,13 +4875,25 @@ impl Connection {
             for display in valid_add.iter() {
                 let service_name = video_service::get_service_name(video_source, *display);
                 if !lock.contains(&service_name) {
+                    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                     lock.add_service(Box::new(video_service::new(video_source, *display)));
+                    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                    if let Err(error) = self.add_mobile_monitor_service(&mut lock) {
+                        log::trace!("Capture source unavailable: {error}");
+                        return;
+                    }
                 }
             }
             for display in valid_set.iter() {
                 let service_name = video_service::get_service_name(video_source, *display);
                 if !lock.contains(&service_name) {
+                    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                     lock.add_service(Box::new(video_service::new(video_source, *display)));
+                    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+                    if let Err(error) = self.add_mobile_monitor_service(&mut lock) {
+                        log::trace!("Capture source unavailable: {error}");
+                        return;
+                    }
                 }
             }
             if !add.is_empty() {
@@ -4826,7 +4965,7 @@ impl Connection {
         }
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     fn change_resolution(&mut self, d: Option<usize>, r: &Resolution) {
         if self.keyboard {
             if let Ok(displays) = display_service::try_get_displays() {
@@ -4956,7 +5095,7 @@ impl Connection {
                 self.lock_after_session_end = q == BoolOption::Yes;
             }
         }
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         if let Ok(q) = o.show_remote_cursor.enum_value() {
             if q != BoolOption::NotSet {
                 self.show_remote_cursor = q == BoolOption::Yes;
@@ -4974,7 +5113,7 @@ impl Connection {
                 }
             }
         }
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         if let Ok(q) = o.follow_remote_cursor.enum_value() {
             if q != BoolOption::NotSet {
                 self.follow_remote_cursor = q == BoolOption::Yes;
@@ -5113,13 +5252,13 @@ impl Connection {
                 }
             }
         }
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         if let Ok(q) = o.terminal_persistent.enum_value() {
             if q != BoolOption::NotSet {
                 self.update_terminal_persistence(q == BoolOption::Yes).await;
             }
         }
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         if let Ok(q) = o.show_my_cursor.enum_value() {
             if q != BoolOption::NotSet {
                 use crate::whiteboard;
@@ -5128,13 +5267,13 @@ impl Connection {
                 let is_lower_win10 = !crate::platform::windows::is_win_10_or_greater();
                 #[cfg(not(target_os = "windows"))]
                 let is_lower_win10 = false;
-                #[cfg(target_os = "linux")]
+                #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
                 let is_linux_supported = crate::whiteboard::is_supported();
-                #[cfg(not(target_os = "linux"))]
+                #[cfg(not(all(target_os = "linux", not(target_env = "ohos"))))]
                 let is_linux_supported = false;
                 let not_support_msg = if is_lower_win10 {
                     "Windows 10 or greater is required."
-                } else if cfg!(target_os = "linux") && !is_linux_supported {
+                } else if cfg!(all(target_os = "linux", not(target_env = "ohos"))) && !is_linux_supported {
                     "This feature is not supported on native Wayland, please install XWayland or switch to X11."
                 } else {
                     ""
@@ -5207,6 +5346,7 @@ impl Connection {
                             5_000,
                         );
                         if err_msg.is_empty() {
+                            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
                             privacy_mode::close_other_remote_connections_for_privacy(self.inner.id);
                             crate::common::make_privacy_mode_msg(
                                 back_notification::PrivacyModeState::PrvOnSucceeded,
@@ -5324,16 +5464,16 @@ impl Connection {
         {
             #[cfg(target_os = "macos")]
             privacy_mode::macos::turn_off_before_lock(self.inner.id());
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             lock_screen().await;
         }
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         let data = if self.chat_unanswered || self.file_transferred && cfg!(feature = "flutter") {
             ipc::Data::Disconnected
         } else {
             ipc::Data::Close
         };
-        #[cfg(any(target_os = "android", target_os = "ios"))]
+        #[cfg(any(target_os = "android", any(target_os = "ios", target_env = "ohos")))]
         let data = ipc::Data::Close;
         self.tx_to_cm.send(data).ok();
         self.port_forward_socket.take();
@@ -5719,7 +5859,7 @@ impl Connection {
         }
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     fn release_pressed_modifiers(&mut self) {
         for modifier in self.pressed_modifiers.iter() {
             rdev::simulate(&rdev::EventType::KeyRelease(*modifier)).ok();
@@ -5778,7 +5918,7 @@ impl Connection {
         };
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     async fn handle_cursor_switch_display(&mut self, pos: CursorPosition) {
         if self.multi_ui_session {
             return;
@@ -6291,13 +6431,13 @@ impl Connection {
         self.send(msg_out).await;
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     async fn update_terminal_persistence(&mut self, persistent: bool) {
         self.terminal_persistent = persistent;
         terminal_service::set_persistent(&self.terminal_service_id, persistent).ok();
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     async fn init_terminal_service(&mut self) {
         debug_assert!(self.terminal_user_token.is_some());
         let Some(user_token) = self.terminal_user_token.clone() else {
@@ -6317,7 +6457,7 @@ impl Connection {
         self.terminal_generic_service = Some(s);
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     async fn handle_terminal_action(&mut self, action: TerminalAction) -> ResultType<()> {
         debug_assert!(self.terminal_user_token.is_some());
         let Some(user_token) = self.terminal_user_token.clone() else {
@@ -6355,7 +6495,7 @@ impl Connection {
 }
 
 #[cfg(feature = "flutter")]
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 pub fn insert_switch_sides_uuid(id: String, uuid: uuid::Uuid) {
     SWITCH_SIDES_UUID
         .lock()
@@ -6364,7 +6504,7 @@ pub fn insert_switch_sides_uuid(id: String, uuid: uuid::Uuid) {
 }
 
 #[cfg(feature = "flutter")]
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 pub fn insert_pending_switch_sides_uuid(id: String, uuid: uuid::Uuid) -> bool {
     let mut uuids = PENDING_SWITCH_SIDES_UUID.lock().unwrap();
     uuids.retain(|_, (instant, _, _)| instant.elapsed() < SWITCH_SIDES_UUID_TTL);
@@ -6376,7 +6516,7 @@ pub fn insert_pending_switch_sides_uuid(id: String, uuid: uuid::Uuid) -> bool {
 }
 
 #[cfg(feature = "flutter")]
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 pub fn has_pending_switch_sides_uuid(id: &str, uuid: &uuid::Uuid) -> bool {
     let mut uuids = PENDING_SWITCH_SIDES_UUID.lock().unwrap();
     uuids.retain(|_, (instant, _, _)| instant.elapsed() < SWITCH_SIDES_UUID_TTL);
@@ -6387,7 +6527,7 @@ pub fn has_pending_switch_sides_uuid(id: &str, uuid: &uuid::Uuid) -> bool {
 }
 
 #[cfg(feature = "flutter")]
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 pub fn claim_pending_switch_sides_uuid(id: &str, uuid: &uuid::Uuid) -> bool {
     let mut uuids = PENDING_SWITCH_SIDES_UUID.lock().unwrap();
     uuids.retain(|_, (instant, _, _)| instant.elapsed() < SWITCH_SIDES_UUID_TTL);
@@ -6401,7 +6541,7 @@ pub fn claim_pending_switch_sides_uuid(id: &str, uuid: &uuid::Uuid) -> bool {
     false
 }
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
 // IPC bootstrap summary:
 // - Start CM when missing, then bridge bidirectional messages between this task and CM IPC.
 async fn start_ipc(
@@ -6426,12 +6566,12 @@ async fn start_ipc(
         if crate::platform::is_root() {
             let mut res = Ok(None);
             for _ in 0..10 {
-                #[cfg(not(any(target_os = "linux")))]
+                #[cfg(not(any(all(target_os = "linux", not(target_env = "ohos")))))]
                 {
                     log::debug!("Start cm");
                     res = crate::platform::run_as_user(args.clone());
                 }
-                #[cfg(target_os = "linux")]
+                #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
                 {
                     log::debug!("Start cm");
                     res = crate::platform::run_as_user(args.clone(), None, None::<(&str, &str)>);
@@ -6676,6 +6816,7 @@ impl FileRemoveLogControl {
     }
 }
 
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 fn start_wakelock_thread() -> std::sync::mpsc::Sender<(usize, usize)> {
     // Check if we should keep awake during incoming sessions
     use crate::platform::{get_wakelock, WakeLock};
@@ -6710,7 +6851,7 @@ fn start_wakelock_thread() -> std::sync::mpsc::Sender<(usize, usize)> {
                                 }
                             }
                         } else {
-                            if cfg!(target_os = "linux") {
+                            if cfg!(all(target_os = "linux", not(target_env = "ohos"))) {
                                 display = true;
                             }
                             wakelock = Some(get_wakelock(display));
@@ -6763,7 +6904,7 @@ impl Default for PortableState {
 
 impl Drop for Connection {
     fn drop(&mut self) {
-        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         self.release_pressed_modifiers();
 
         if let Some(s) = self.terminal_generic_service.as_ref() {
@@ -6784,7 +6925,7 @@ impl Drop for Connection {
 extern "C" fn connection_shutdown_hook() {
     // https://stackoverflow.com/questions/35980148/why-does-an-atexit-handler-panic-when-it-accesses-stdout
     // Please make sure there is no print in the call stack
-    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    #[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos"))))]
     {
         *WALLPAPER_REMOVER.lock().unwrap() = None;
     }
@@ -6947,6 +7088,7 @@ mod raii {
                 sender,
                 printer,
             });
+            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
             Self::check_wake_lock();
             use std::sync::Once;
             static _ONCE: Once = Once::new();
@@ -6962,6 +7104,7 @@ mod raii {
             Self(conn_id, conn_type)
         }
 
+        #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
         fn check_wake_lock() {
             let conn_count = AUTHED_CONNS.lock().unwrap().len();
             let remote_count = AUTHED_CONNS
@@ -6976,6 +7119,7 @@ mod raii {
                 .send((conn_count, remote_count)));
         }
 
+        #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
         pub fn check_wake_lock_on_setting_changed() {
             let current =
                 config::Config::get_bool_option(keys::OPTION_KEEP_AWAKE_DURING_INCOMING_SESSIONS);
@@ -7082,7 +7226,7 @@ mod raii {
                     .on_connection_close(self.0);
             }
             // Clear per-connection state to avoid stale behavior if conn ids are reused.
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             clear_relative_mouse_active(self.0);
             AUTHED_CONNS.lock().unwrap().retain(|c| c.conn_id != self.0);
             let remote_count = AUTHED_CONNS
@@ -7092,21 +7236,22 @@ mod raii {
                 .filter(|c| c.conn_type == AuthConnType::Remote)
                 .count();
             if remote_count == 0 {
-                #[cfg(any(target_os = "windows", target_os = "linux"))]
+                #[cfg(any(target_os = "windows", all(target_os = "linux", not(target_env = "ohos"))))]
                 {
                     *WALLPAPER_REMOVER.lock().unwrap() = None;
                 }
-                #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
                 display_service::restore_resolutions();
                 #[cfg(windows)]
                 let _ = virtual_display_manager::reset_all();
-                #[cfg(target_os = "linux")]
+                #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
                 if self.1 == AuthConnType::Remote || self.1 == AuthConnType::ViewCamera {
                     wayland::try_close_portal_session();
                 }
             }
+            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
             Self::check_wake_lock();
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
             {
                 use crate::whiteboard;
                 whiteboard::unregister_whiteboard(whiteboard::get_key_cursor(self.0));
@@ -7386,7 +7531,7 @@ mod test {
     }
 
     #[cfg(feature = "flutter")]
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
     #[test]
     fn test_pending_switch_sides_uuid_is_claimed_once() {
         let id = uuid::Uuid::new_v4().to_string();

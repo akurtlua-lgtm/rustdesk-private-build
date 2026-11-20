@@ -6,14 +6,14 @@
 
 include!(concat!(env!("OUT_DIR"), "/yuv_ffi.rs"));
 
-#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
+#[cfg(any(not(any(target_os = "ios", target_env = "ohos")), feature = "mobile-view-only-host"))]
 use crate::PixelBuffer;
 use crate::{generate_call_macro, EncodeYuvFormat, TraitPixelBuffer};
 use hbb_common::{bail, log, ResultType};
 
 generate_call_macro!(call_yuv, false);
 
-#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
+#[cfg(any(not(any(target_os = "ios", target_env = "ohos")), feature = "mobile-view-only-host"))]
 pub fn convert_to_yuv(
     captured: &PixelBuffer,
     dst_fmt: EncodeYuvFormat,
