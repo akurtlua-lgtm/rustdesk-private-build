@@ -355,10 +355,18 @@ async fn registration_ack_relay_key_and_inflight_work_revoke_together() {
     udp.send_to(&punch.write_to_bytes().unwrap(), device)
         .await
         .unwrap();
-    let (incoming, address) = timeout(5000, listener.accept()).await.unwrap().unwrap();
-    let mut response = FramedStream::from(incoming, address);
-    let bytes = response.next_timeout(3000).await.unwrap().unwrap();
-    let response = RendezvousMessage::parse_from_bytes(&bytes).unwrap();
+    let response = timeout(5000, async {
+        loop {
+            let (incoming, address) = listener.accept().await.unwrap();
+            let mut response = FramedStream::from(incoming, address);
+            // The native UDP resolver can open an empty TCP reachability probe first.
+            if let Some(bytes) = response.next_timeout(1000).await {
+                break RendezvousMessage::parse_from_bytes(&bytes.unwrap()).unwrap();
+            }
+        }
+    })
+    .await
+    .unwrap();
     let Some(hbb_common::rendezvous_proto::rendezvous_message::Union::RelayResponse(response)) =
         response.union
     else {
