@@ -21,6 +21,9 @@ static CURRENT: Mutex<Option<Arc<Session>>> = Mutex::new(None);
 static NEXT: AtomicU64 = AtomicU64::new(1);
 static INITIALIZE: Mutex<()> = Mutex::new(());
 
+#[cfg(target_os = "ios")]
+mod legacy;
+
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct SharedServers {
@@ -72,6 +75,8 @@ pub unsafe extern "C" fn rd_mobile_host_initialize(directory: *const u8, length:
     *hbb_common::config::APP_DIR.write().unwrap() = directory.to_owned();
     *hbb_common::config::APP_HOME_DIR.write().unwrap() = directory.to_owned();
     crate::load_custom_client();
+    #[cfg(target_os = "ios")]
+    legacy::EXTENSION_INITIALIZED.store(true, Ordering::Release);
     0
 }
 
@@ -435,6 +440,23 @@ mod tests {
             unsafe { rd_mobile_host_set_password(password.as_ptr(), password.len()) },
             0
         );
+        #[cfg(target_os = "ios")]
+        {
+            let info = crate::auth_2fa::TOTPInfo {
+                name: "synthetic-mobile-device".into(), secret: vec![7; 20],
+                digits: 6, created_at: 1,
+            };
+            Config::set_option("2fa".into(), info.into_string().unwrap());
+            let mut bytes = vec![0; 16384];
+            let size = unsafe { legacy::rd_mobile_host_legacy_policy(bytes.as_mut_ptr(), bytes.len()) };
+            assert!(size > 1 && size <= bytes.len());
+            Config::set_option("2fa".into(), String::new());
+            assert_eq!(unsafe { legacy::rd_mobile_host_legacy_import(bytes.as_ptr(), size - 1) }, 0);
+            assert_eq!(crate::auth_2fa::get_2fa(None).unwrap().secret, vec![7; 20]);
+            let invalid = br#"{"schema":1,"totp":null,"account_token":"must-not-transfer"}"#;
+            assert_eq!(unsafe { legacy::rd_mobile_host_legacy_import(invalid.as_ptr(), invalid.len()) }, -1);
+            assert!(crate::auth_2fa::get_2fa(None).is_some());
+        }
         assert!(Config::has_permanent_password());
         assert_eq!(password_security::approve_mode(), ApproveMode::Password);
         assert_eq!(

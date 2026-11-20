@@ -13,6 +13,10 @@ int32_t rd_mobile_host_configure_servers(const uint8_t* data, size_t length);
 /* Required buffer size includes NUL; null/too-small output writes nothing. Private app storage only. */
 size_t rd_mobile_host_servers(uint8_t* output, size_t capacity);
 size_t rd_mobile_host_id(uint8_t* output, size_t capacity);
+/* iOS legacy extension only: secret policy bytes, device-local shared Keychain only.
+ * Never store in app-group files/logs or send with account/API requests. */
+size_t rd_mobile_host_legacy_policy(uint8_t* output, size_t capacity);
+int32_t rd_mobile_host_legacy_import(const uint8_t* data, size_t length);
 /* Callbacks borrow only for the call; BGRA is copied. Requires current OS consent and
  * configured permanent device password/password-only approval; no account token is accepted. */
 uint64_t rd_mobile_host_begin(const uint8_t* pixels, size_t length, uint32_t width, uint32_t height, size_t stride);

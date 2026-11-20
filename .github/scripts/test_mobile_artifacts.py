@@ -37,6 +37,37 @@ class MobileArtifactTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'Rust session core'):
                     verify_ios(app, '1.5.14', '82', 'private.app')
 
+    def test_ios_sharing_inspects_real_extension_and_rejects_missing_auth_core(self):
+        from verify_ios_sharing import verify
+        with tempfile.TemporaryDirectory() as directory:
+            app = Path(directory)
+            extension = app / 'PlugIns/BroadcastShare.appex'
+            extension.mkdir(parents=True)
+            groups = dict(RustDeskSharingAppGroup='group.private.app.sharing',
+                          RustDeskSharingKeychainGroup='private.app.sharing')
+            (app / 'Info.plist').write_bytes(plistlib.dumps(groups))
+            info = dict(groups, CFBundleIdentifier='private.app.BroadcastShare', CFBundleExecutable='BroadcastShare',
+                        CFBundleShortVersionString='1.5.14', CFBundleVersion='82',
+                        CFBundleSupportedPlatforms=['iPhoneSimulator'],
+                        NSExtension=dict(NSExtensionPointIdentifier='com.apple.broadcast-services-upload'))
+            (extension / 'Info.plist').write_bytes(plistlib.dumps(info))
+            required = ('initialize', 'set_password', 'configure_servers', 'servers', 'id', 'begin',
+                        'frame', 'stop', 'state', 'run', 'release', 'legacy_policy', 'legacy_import')
+            symbols = '\n'.join('T _rd_mobile_host_' + name for name in required)
+            app_symbols = symbols
+            dependencies = 'libSystem.B.dylib'
+            def inspect(*args):
+                return {'lipo': 'arm64', 'vtool': ' platform IOSSIMULATOR', 'nm': symbols,
+                        'otool': dependencies}[args[1]]
+            self.assertTrue(verify(app, '1.5.14', '82', 'private.app', app_symbols, inspect)['broadcast_extension_inspected'])
+            symbols = symbols.replace('_rd_mobile_host_run', '_missing_run')
+            with self.assertRaisesRegex(ValueError, 'actual native host ABI'):
+                verify(app, '1.5.14', '82', 'private.app', app_symbols, inspect)
+            symbols = '\n'.join('T _rd_mobile_host_' + name for name in required)
+            dependencies = 'Flutter.framework/Flutter'
+            with self.assertRaisesRegex(ValueError, 'application-only APIs'):
+                verify(app, '1.5.14', '82', 'private.app', app_symbols, inspect)
+
     def test_apk_with_wrong_identity_or_intel_core_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             apk = Path(directory) / 'test.apk'

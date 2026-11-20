@@ -17,6 +17,7 @@ import '../../consts.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
 import '../private_build.dart';
+import '../widgets/private_ios_sharing.dart';
 import 'home_page.dart';
 
 /// Connection page for connecting to a remote peer.
@@ -353,7 +354,9 @@ class _ConnectionPageState extends State<ConnectionPage> {
       if (isWebDesktop)
         getConnectionPageTitle(context, true)
             .marginOnly(bottom: 10, top: 15, left: 12),
-      w
+      w,
+      if (isIOS && const bool.fromEnvironment('RD_PRIVATE_MOBILE_SCREEN_SHARING'))
+        const PrivateIosSharingButton()
     ]);
     return Align(
         alignment: Alignment.topCenter,

@@ -118,3 +118,108 @@ jobs:
           name: ios-hostcore-synthetic-capture-tests
           path: probe-output/ios-cpu-media-probe.json
           if-no-files-found: error
+
+  sharing-swift-api:
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-hostcore-integration-')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            developer: /Applications/Xcode_16.4.app/Contents/Developer
+          - runner: xcode-27
+            developer: ''
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env:
+      DEVELOPER_DIR: ${{ matrix.developer }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Check the real application and broadcast adapters with strict Swift concurrency
+        run: |
+          set -euo pipefail
+          if [[ -z "$DEVELOPER_DIR" ]]; then unset DEVELOPER_DIR; fi
+          for sdk in iphoneos iphonesimulator; do
+            version=$(xcrun --sdk "$sdk" --show-sdk-version)
+            target=arm64-apple-ios15.0
+            if [[ "$sdk" == iphonesimulator ]]; then target=arm64-apple-ios15.0-simulator; fi
+            sources=()
+            if [[ "${version%%.*}" -ge 27 ]]; then
+              sources=(res/ios27-capture/VideoCaptureAPI.swift res/ios27-capture/SharingCapture.swift)
+            fi
+            xcrun --sdk "$sdk" swiftc -swift-version 6 -warnings-as-errors -target "$target" \
+              -sdk "$(xcrun --sdk "$sdk" --show-sdk-path)" -import-objc-header res/mobile-sharing-core/host.h \
+              -typecheck res/ios-capture-frame/CaptureFrame.swift res/ios-capture-frame/CaptureDelivery.swift \
+              res/ios-capture-frame/BroadcastCaptureHandler.swift res/ios-mobile-sharing/NativeSharingHost.swift \
+              res/ios-mobile-sharing/SharingBootstrap.swift res/ios-mobile-sharing/SampleHandler.swift \
+              res/ios-mobile-sharing/SharingViewController.swift "${sources[@]}"
+          done
+  sharing-application:
+    needs: [generate-bridge, sharing-swift-api]
+    if: github.repository == 'akurtlua-lgtm/rustdesk-private-build' && startsWith(github.ref, 'refs/heads/codex/ios-hostcore-integration-')
+    runs-on: macos-15
+    timeout-minutes: 150
+    env:
+      RD_PRIVATE_MOBILE_SCREEN_SHARING: 'true'
+      VERSION: '1.5.14'
+      BUILD_NUMBER: '82'
+      MOBILE_APPLICATION_ID: 'io.github.akurtlualgtm.rustdesk'
+      FLUTTER_VERSION: '3.24.5'
+      VCPKG_COMMIT_ID: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+      RD_ID_SERVER: ${{ secrets.RD_ID_SERVER }}
+      RD_RELAY_SERVER: ${{ secrets.RD_RELAY_SERVER }}
+      RD_SERVER_PUBLIC_KEY: ${{ secrets.RD_SERVER_PUBLIC_KEY }}
+      RD_PRIVATE_API_SERVER: ${{ secrets.RD_PRIVATE_API_SERVER }}
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Require a native ARM64 simulator host
+        run: test "$(uname -m)" = arm64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: bridge-artifact
+          path: ./
+      - name: Install iOS native prerequisites
+        run: |
+          brew install nasm autoconf autoconf-archive automake libtool pkg-config
+          echo "$(brew --prefix libtool)/libexec/gnubin" >> "$GITHUB_PATH"
+          python3 -m pip install --break-system-packages 'cmake==4.3.0'
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: '1.81'
+          targets: aarch64-apple-ios-sim
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: arm64
+          cache: true
+      - name: Test mobile virtual mouse canvas coordinates
+        run: |
+          cd flutter
+          flutter pub get
+          flutter test --no-pub --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true test/floating_mouse_cursor_offset_test.dart test/private_mobile_update_channel_test.dart
+      - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+        with:
+          vcpkgDirectory: ${{ env.VCPKG_ROOT }}
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+      - name: Build, inspect and launch actual iOS simulator application
+        run: bash .github/scripts/build_private_ios_simulator.sh
+      - name: Retain failed simulator diagnostics separately from verified applications
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: private-mobile-ios-failed-not-for-release
+          path: mobile-output/*
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: private-mobile-ios-simulator-arm64
+          path: mobile-output/*
+          if-no-files-found: error

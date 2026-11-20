@@ -34,7 +34,7 @@ def verify_android(path, version, build_number, application_id, aapt2):
     return {'platform': 'android', 'architecture': 'arm64-v8a'}
 
 
-def verify_ios(path, version, build_number, application_id):
+def verify_ios(path, version, build_number, application_id, screen_sharing=False):
     with (path / 'Info.plist').open('rb') as stream:
         info = plistlib.load(stream)
     expected = {
@@ -61,7 +61,11 @@ def verify_ios(path, version, build_number, application_id):
     required = ('session_get_rgba', 'wire_session_start', 'wire_session_login', 'wire_main_init')
     if any(not re.search(r'\b_' + symbol + r'$', symbols, re.M) for symbol in required):
         raise ValueError('Simulator executable is missing the Rust session core')
-    return {'platform': 'ios-simulator', 'architecture': 'arm64', 'physical_device_installable': False}
+    result = {'platform': 'ios-simulator', 'architecture': 'arm64', 'physical_device_installable': False}
+    if screen_sharing:
+        from verify_ios_sharing import verify
+        result.update(verify(path, version, build_number, application_id, symbols, run))
+    return result
 
 
 def main():
@@ -72,6 +76,7 @@ def main():
     parser.add_argument('--build-number', required=True)
     parser.add_argument('--application-id', required=True)
     parser.add_argument('--aapt2')
+    parser.add_argument('--screen-sharing', action='store_true')
     parser.add_argument('--metadata', type=Path, required=True)
     args = parser.parse_args()
     source = os.environ.get('GITHUB_SHA', '')
@@ -83,7 +88,7 @@ def main():
         result = verify_android(args.artifact, args.version, args.build_number, args.application_id, args.aapt2)
         result.update(size=args.artifact.stat().st_size, sha256=hashlib.sha256(args.artifact.read_bytes()).hexdigest())
     else:
-        result = verify_ios(args.artifact, args.version, args.build_number, args.application_id)
+        result = verify_ios(args.artifact, args.version, args.build_number, args.application_id, args.screen_sharing)
     result.update(version=args.version, build_number=args.build_number, application_id=args.application_id,
                   source=source, run_id=os.environ.get('GITHUB_RUN_ID'), artifact=args.artifact.name)
     args.metadata.write_text(json.dumps(result, indent=2) + '\n')

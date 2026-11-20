@@ -24,6 +24,11 @@ import AVFoundation
   func sceneWillConnect(window: UIWindow?, launchURL: URL?) {
     self.window = window
     GeneratedPluginRegistrant.register(with: self)
+    #if RD_PRIVATE_MOBILE_SCREEN_SHARING
+    if let controller = window?.rootViewController as? FlutterViewController {
+      SharingPlugin.register(controller: controller)
+    }
+    #endif
     var launchOptions: [UIApplication.LaunchOptionsKey: Any] = [:]
     if let launchURL = launchURL {
       launchOptions[.url] = launchURL
