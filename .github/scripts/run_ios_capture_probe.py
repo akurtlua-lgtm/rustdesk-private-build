@@ -70,21 +70,21 @@ def main():
             print(safe_diagnostics('error: ' + host_log.read_text(errors='replace').replace('\n', '\nerror: '), environment))
             raise RuntimeError('Real iOS host loopback timed out; no passing record') from None
         host_output = host_log.read_text(errors='replace')
-        if host_result.returncode or not re.search(r'test result: ok\. 2 passed; 0 failed;', host_output):
+        if host_result.returncode or not re.search(r'test result: ok\. 3 passed; 0 failed;', host_output):
             print(safe_diagnostics('error: ' + host_output.replace('\n', '\nerror: '), environment))
-            raise RuntimeError('Real iOS host loopback did not pass exactly two tests')
+            raise RuntimeError('Real iOS host loopback did not pass exactly three tests')
         source = os.environ['GITHUB_SHA']
         if not re.fullmatch('[a-f0-9]{40}', source):
             raise ValueError('Full source SHA required')
         record = dict(source=source, run_id=os.environ['GITHUB_RUN_ID'], sdk=sdk,
                       target='aarch64-apple-ios-sim', tests=2, result='passed',
                       synthetic_bgra_vp8_box_decode_executed=True,
-                      host_loopback_tests=2, real_encrypted_host_loopback=True,
+                      host_loopback_tests=3, real_encrypted_host_loopback=True,
                       device_password_totp_read_only_and_scope_revocation=True,
                       system_screen_capture_tested=False, remote_session_tested=False,
                       broadcast_extension_started=False, physical_device_tested=False)
         Path('probe-output/ios-cpu-media-probe.json').write_text(json.dumps(record, indent=2) + '\n')
-        print('Two media tests and two real encrypted TCP host loopback tests passed; synthetic pixels and isolated test configuration, no system capture or physical device.')
+        print('Two media tests and three real encrypted TCP host loopback tests passed; synthetic pixels and isolated test configuration, no system capture or physical device.')
     finally:
         simctl('shutdown', udid)
 

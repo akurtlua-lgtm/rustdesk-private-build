@@ -271,3 +271,124 @@ async fn plaintext_refused_and_stalled_handshake_revoked() {
     assert!(timeout(5000, task).await.unwrap().unwrap().is_err());
     closed(&mut stalled).await;
 }
+
+#[tokio::test]
+async fn registration_ack_relay_key_and_inflight_work_revoke_together() {
+    use hbb_common::rendezvous_proto::{
+        PunchHole, RegisterPeerResponse, RegisterPkResponse, RendezvousMessage,
+    };
+    initialize();
+    let scope = scope();
+    let registration = scope.registration();
+    let listener = hbb_common::tcp::new_listener("127.0.0.1:0", false)
+        .await
+        .unwrap();
+    let relay = hbb_common::tcp::new_listener("127.0.0.1:0", false)
+        .await
+        .unwrap();
+    let udp = hbb_common::tokio::net::UdpSocket::bind(listener.local_addr().unwrap())
+        .await
+        .unwrap();
+    let (public, _) = sign::gen_keypair();
+    let key = crate::encode64(public.0);
+    let saved_key = Config::get_option("key");
+    let saved_relay = Config::get_option("relay-server");
+    Config::set_option("key".into(), key.clone());
+    Config::set_option(
+        "relay-server".into(),
+        relay.local_addr().unwrap().to_string(),
+    );
+    assert!(!scope.is_registered());
+    let task = tokio::spawn(crate::rendezvous_mediator::mobile_sharing::run(
+        registration,
+        listener.local_addr().unwrap().to_string(),
+    ));
+    let mut bytes = [0u8; 4096];
+    let (length, device) = timeout(5000, udp.recv_from(&mut bytes))
+        .await
+        .unwrap()
+        .unwrap();
+    let registered = RendezvousMessage::parse_from_bytes(&bytes[..length]).unwrap();
+    let Some(hbb_common::rendezvous_proto::rendezvous_message::Union::RegisterPk(registered)) =
+        registered.union
+    else {
+        panic!("native OSS UDP RegisterPk required");
+    };
+    assert_eq!(registered.id, Config::get_id());
+    assert_eq!(registered.pk.as_ref(), Config::get_key_pair().1);
+    assert!(!scope.is_registered());
+    let mut reply = RendezvousMessage::new();
+    reply.set_register_pk_response(RegisterPkResponse::new());
+    udp.send_to(&reply.write_to_bytes().unwrap(), device)
+        .await
+        .unwrap();
+    let (length, source) = timeout(5000, udp.recv_from(&mut bytes))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(source, device);
+    let peer = RendezvousMessage::parse_from_bytes(&bytes[..length]).unwrap();
+    let Some(hbb_common::rendezvous_proto::rendezvous_message::Union::RegisterPeer(peer)) =
+        peer.union
+    else {
+        panic!("current UDP socket must be registered before readiness");
+    };
+    assert_eq!(peer.id, Config::get_id());
+    assert!(!scope.is_registered());
+    reply.set_register_peer_response(RegisterPeerResponse::new());
+    udp.send_to(&reply.write_to_bytes().unwrap(), device)
+        .await
+        .unwrap();
+    timeout(5000, async {
+        while !scope.is_registered() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    let mut punch = RendezvousMessage::new();
+    punch.set_punch_hole(PunchHole {
+        socket_addr: hbb_common::AddrMangle::encode("127.0.0.1:12345".parse().unwrap()).into(),
+        relay_server: relay.local_addr().unwrap().to_string(),
+        ..Default::default()
+    });
+    udp.send_to(&punch.write_to_bytes().unwrap(), device)
+        .await
+        .unwrap();
+    let (incoming, address) = timeout(5000, listener.accept()).await.unwrap().unwrap();
+    let mut response = FramedStream::from(incoming, address);
+    let bytes = response.next_timeout(3000).await.unwrap().unwrap();
+    let response = RendezvousMessage::parse_from_bytes(&bytes).unwrap();
+    let Some(hbb_common::rendezvous_proto::rendezvous_message::Union::RelayResponse(response)) =
+        response.union
+    else {
+        panic!("OSS TCP RelayResponse required");
+    };
+    let uuid = &response.uuid;
+    uuid::Uuid::parse_str(uuid).unwrap();
+    let (incoming, address) = timeout(5000, relay.accept()).await.unwrap().unwrap();
+    let mut controller = Stream::Tcp(FramedStream::from(incoming, address));
+    let bytes = timeout(5000, controller.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    let join = RendezvousMessage::parse_from_bytes(&bytes).unwrap();
+    let Some(hbb_common::rendezvous_proto::rendezvous_message::Union::RequestRelay(join)) =
+        join.union
+    else {
+        panic!("relay join required");
+    };
+    assert_eq!(join.licence_key, key);
+    assert_eq!(&join.uuid, uuid);
+    assert!(matches!(
+        read(&mut controller).await.union,
+        Some(message::Union::SignedId(_))
+    ));
+    drop(scope);
+    closed(&mut controller).await;
+    timeout(5000, task).await.unwrap().unwrap().unwrap();
+    drop(self::scope());
+    Config::set_option("key".into(), saved_key);
+    Config::set_option("relay-server".into(), saved_relay);
+}

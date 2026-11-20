@@ -4,7 +4,10 @@ use hbb_common::{anyhow::anyhow, bail, ResultType};
 use scrap::{mobile_frame::FrameInbox, CaptureLease};
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex, RwLock, Weak},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex, RwLock, Weak,
+    },
 };
 
 static CURRENT: Mutex<Weak<Scope>> = Mutex::new(Weak::new());
@@ -13,6 +16,7 @@ struct Scope {
     server: ServerPtrWeak,
     source: Arc<FrameInbox>,
     stop: StopSignal,
+    registered: AtomicBool,
 }
 
 pub(crate) struct ScopedHost {
@@ -39,6 +43,7 @@ pub(crate) fn prepare(source: Arc<FrameInbox>) -> ResultType<ScopedHost> {
         server: Arc::downgrade(&server),
         source,
         stop: StopSignal::new(),
+        registered: AtomicBool::new(false),
     });
     *current = Arc::downgrade(&scope);
     Ok(ScopedHost {
@@ -52,16 +57,49 @@ impl ScopedHost {
     pub(crate) fn server(&self) -> ServerPtr {
         self.server.clone()
     }
+
+    pub(crate) fn registration(&self) -> Registration {
+        Registration {
+            scope: self.scope.clone(),
+            server: self.server.clone(),
+        }
+    }
+
+    pub(crate) fn is_registered(&self) -> bool {
+        !self.scope.stop.is_stopped() && self.scope.registered.load(Ordering::Acquire)
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct Registration {
+    scope: Arc<Scope>,
+    server: ServerPtr,
+}
+
+impl Registration {
+    pub(crate) fn server(&self) -> ServerPtr {
+        self.server.clone()
+    }
+    pub(crate) fn stopped(&self) -> bool {
+        self.scope.stop.is_stopped()
+    }
+    pub(crate) fn stop_receiver(&self) -> StopReceiver {
+        self.scope.stop.receiver(0)
+    }
+    pub(crate) fn set_registered(&self, registered: bool) {
+        self.scope.registered.store(registered, Ordering::Release);
+    }
+    pub(crate) fn revoke(&self) {
+        self.scope.stop.stop();
+        self.scope.source.close();
+    }
 }
 
 impl Drop for ScopedHost {
     fn drop(&mut self) {
         self.scope.stop.stop();
         self.scope.source.close();
-        let mut current = CURRENT.lock().unwrap();
-        if current.ptr_eq(&Arc::downgrade(&self.scope)) {
-            *current = Weak::new();
-        }
+        // In-flight registration work pins this scope until its normal connection cleanup ends.
     }
 }
 

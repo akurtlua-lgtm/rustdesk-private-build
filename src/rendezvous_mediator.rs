@@ -39,6 +39,9 @@ use crate::{
 
 type Message = RendezvousMessage;
 
+#[cfg(all(target_os = "ios", feature = "ios-hostcore-compile-probe"))]
+pub(crate) mod mobile_sharing;
+
 fn connection_meta(
     control_permissions: Option<ControlPermissions>,
     controlled_context: Option<ControlledContext>,
