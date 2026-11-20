@@ -13,6 +13,7 @@ export class Sharing {
   private backgroundAllowed: boolean = false;
   private backgroundRequested: boolean = false;
   private backgroundPending: boolean = false;
+  private cancellation?: (info: backgroundTaskManager.ContinuousTaskCancelInfo) => void;
 
   async start(context: common.UIAbilityContext, password: string, width: number, height: number): Promise<void> {
     if (this.active || this.busy || this.backgroundPending) return;
@@ -46,6 +47,12 @@ export class Sharing {
           actionFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
         });
         if (this.active) {
+          const cancelled = (_info: backgroundTaskManager.ContinuousTaskCancelInfo): void => {
+            this.backgroundAllowed = false;
+            this.stop(context);
+          };
+          backgroundTaskManager.on('continuousTaskCancel', cancelled);
+          this.cancellation = cancelled;
           await backgroundTaskManager.startBackgroundRunning(context,
             backgroundTaskManager.BackgroundMode.AUDIO_RECORDING, agent);
           this.backgroundAllowed = true;
@@ -68,6 +75,10 @@ export class Sharing {
       if (this.backgroundAllowed) {
         await backgroundTaskManager.stopBackgroundRunning(context);
         this.backgroundAllowed = false;
+      }
+      if (this.cancellation) {
+        backgroundTaskManager.off('continuousTaskCancel', this.cancellation);
+        this.cancellation = undefined;
       }
       this.status = result === 0 ? '共享已停止' : `会话已撤销，系统采集清理失败 (${result})，请重试停止`;
     } catch { this.status = '会话已撤销，停止操作未完成，请重试。'; }

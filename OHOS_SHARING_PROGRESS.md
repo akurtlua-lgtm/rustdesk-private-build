@@ -21,3 +21,5 @@ NAPI 先启动仅等待帧或撤销的独立线程；首次有效帧唤醒后，
 本机已完成真实 `aarch64-unknown-linux-ohos` 的特性开启检查、release 链接和关闭检查；API20 构建得到包含实际 ArkTS、NAPI、25 个原生核心接口的 unsigned HAP，ELF/依赖/权限校验通过。Python 12 项测试通过，采集组件六项 ASan/UBSan 测试及 SDK 生命周期符号在独立 CI 已通过。当前集成版本仍需同源码 CI 复验。没有执行鸿蒙 OS 采集授权、后台系统任务或真机远程连接；SDK 为公开 API20/6.0.0.47 Beta1，不把它称为商业鸿蒙真机验证。
 
 必要回归面：`src/lib.rs`、`src/server.rs`、server connection/display/video、`src/ipc.rs`、`src/rendezvous_mediator.rs`、`src/ui_cm_interface.rs` 及 scrap 模块条件增加 OHOS 独立入口，避免走 Linux 桌面采集/IPC；非 OHOS 原条件保持等价。音频新增明确不支持的 OHOS stub，未实例化服务。现有 Index/EntryAbility 仅增加特性门禁 UI 与后台撤销钩子。构建脚本显式选择特性/权限；产物验证默认仍为原控制端，启用时额外核对完整 host ABI 和精确权限。共享子模块固定 fae47e0，仅使用既有三文件 OHOS 补丁，不提交本地子模块修改。
+
+后台任务撤销补充：使用公开 `continuousTaskCancel` 回调，在申请任务前注册；系统撤销后台许可时通过既有停止入口立即撤销来源与连接，停止完成后解除订阅。该增量真实 API20 ArkTS/HAP 构建通过，系统事件仍待真机验证。
