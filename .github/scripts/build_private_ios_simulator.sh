@@ -36,12 +36,12 @@ export IPHONEOS_DEPLOYMENT_TARGET=15.0
 ios_sim_sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
 export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim="--target=arm64-apple-ios15.0-simulator -isysroot \"$ios_sim_sdk\""
 features=flutter
-sharing_args=()
+sharing_args=(--metadata mobile-output/ios-simulator-build.json)
 sharing_define=false
 case "${RD_PRIVATE_MOBILE_SCREEN_SHARING:-false}" in
   true)
     features=flutter,mobile-view-only-host,ios-hostcore-compile-probe
-    sharing_args=(--screen-sharing)
+    sharing_args+=(--screen-sharing)
     sharing_define=true
     ruby .github/scripts/configure_ios_sharing.rb
     ;;
@@ -76,7 +76,7 @@ test -d "$app"
 python3 .github/scripts/verify_mobile_artifacts.py ios-simulator "$app" \
   --version "$VERSION" --build-number "$BUILD_NUMBER" \
   --application-id "$MOBILE_APPLICATION_ID" \
-  --metadata mobile-output/ios-simulator-build.json "${sharing_args[@]}"
+  "${sharing_args[@]}"
 ditto -c -k --sequesterRsrc --keepParent "$app" \
   "mobile-output/rustdesk-$VERSION-ios-simulator-arm64.app.zip"
 python3 - "$VERSION" <<'PY'

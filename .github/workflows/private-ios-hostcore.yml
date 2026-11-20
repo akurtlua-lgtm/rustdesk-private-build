@@ -145,16 +145,16 @@ jobs:
             version=$(xcrun --sdk "$sdk" --show-sdk-version)
             target=arm64-apple-ios15.0
             if [[ "$sdk" == iphonesimulator ]]; then target=arm64-apple-ios15.0-simulator; fi
-            sources=()
+            sources=(res/ios-capture-frame/CaptureFrame.swift res/ios-capture-frame/CaptureDelivery.swift
+              res/ios-capture-frame/BroadcastCaptureHandler.swift res/ios-mobile-sharing/NativeSharingHost.swift
+              res/ios-mobile-sharing/SharingBootstrap.swift res/ios-mobile-sharing/SampleHandler.swift
+              res/ios-mobile-sharing/SharingViewController.swift)
             if [[ "${version%%.*}" -ge 27 ]]; then
-              sources=(res/ios27-capture/VideoCaptureAPI.swift res/ios27-capture/SharingCapture.swift)
+              sources+=(res/ios27-capture/VideoCaptureAPI.swift res/ios27-capture/SharingCapture.swift)
             fi
             xcrun --sdk "$sdk" swiftc -swift-version 6 -warnings-as-errors -target "$target" \
               -sdk "$(xcrun --sdk "$sdk" --show-sdk-path)" -import-objc-header res/mobile-sharing-core/host.h \
-              -typecheck res/ios-capture-frame/CaptureFrame.swift res/ios-capture-frame/CaptureDelivery.swift \
-              res/ios-capture-frame/BroadcastCaptureHandler.swift res/ios-mobile-sharing/NativeSharingHost.swift \
-              res/ios-mobile-sharing/SharingBootstrap.swift res/ios-mobile-sharing/SampleHandler.swift \
-              res/ios-mobile-sharing/SharingViewController.swift "${sources[@]}"
+              -typecheck "${sources[@]}"
           done
   sharing-application:
     needs: [generate-bridge, sharing-swift-api]

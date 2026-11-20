@@ -34,7 +34,11 @@ class BroadcastCaptureHandler: RPBroadcastSampleHandler {
     }
 
     override func broadcastPaused() {
-        broadcastFinished()
+        lock.lock()
+        let current = delivery
+        delivery = nil
+        lock.unlock()
+        current?.close(.paused)
         finishBroadcastWithError(NSError(domain: "PrivateCapture", code: Int(CaptureStopReason.paused.rawValue)))
     }
 
