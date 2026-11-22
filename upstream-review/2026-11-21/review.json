@@ -140,5 +140,6 @@
   "workflow_dispatched": false,
   "release_created": false,
   "baseline_advanced": false,
-  "production_changed": false
+  "production_changed": false,
+  "follow_up_review": "../2026-11-22/review.json"
 }

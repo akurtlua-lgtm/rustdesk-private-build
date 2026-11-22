@@ -1,0 +1,129 @@
+diff --git a/flutter/lib/common/widgets/chat_page.dart b/flutter/lib/common/widgets/chat_page.dart
+--- a/flutter/lib/common/widgets/chat_page.dart
++++ b/flutter/lib/common/widgets/chat_page.dart
+@@ -123,12 +123,14 @@ class ChatPage extends StatelessWidget implements PageShape {
+                           ),
+                         ),
+                       ),
+-                      sendButtonBuilder: defaultSendButton(
++                      sendButtonBuilder: (send) => defaultSendButton(
+                         padding:
+                             EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                         color: MyTheme.accent,
+                         icon: Icons.send_rounded,
+-                      ),
++                      )(chatModel.isConnManager
++                          ? () => chatModel.checkSend(send)
++                          : send),
+                     ),
+                     messageOptions: MessageOptions(
+                       showOtherUsersAvatar: false,
+diff --git a/flutter/lib/models/chat_model.dart b/flutter/lib/models/chat_model.dart
+--- a/flutter/lib/models/chat_model.dart
++++ b/flutter/lib/models/chat_model.dart
+@@ -19,6 +19,7 @@ import 'package:flutter_svg/flutter_svg.dart';
+ import '../consts.dart';
+ import '../common.dart';
+ import '../common/widgets/overlay.dart';
++import '../desktop/pages/server_page.dart' show checkClickTime;
+ import '../main.dart';
+ import 'model.dart';
+ 
+@@ -142,8 +143,15 @@ class ChatModel with ChangeNotifier {
+             user: me,
+             createdAt: DateTime.now(),
+           );
+-          send(message);
+-          textController.clear();
++          if (isConnManager) {
++            checkSend(() {
++              send(message);
++              textController.clear();
++            });
++          } else {
++            send(message);
++            textController.clear();
++          }
+           return KeyEventResult.handled;
+         }
+ 
+@@ -469,6 +477,20 @@ class ChatModel with ChangeNotifier {
+     notifyListeners();
+   }
+ 
++  void checkSend(VoidCallback callback) {
++    final id = _currentKey.connId;
++    final text = textController.text;
++    checkClickTime(id, () {
++      if (_currentKey.connId == id &&
++          textController.text == text &&
++          parent.target?.serverModel.clients
++                  .any((client) => client.id == id && !client.disconnected) ==
++              true) {
++        callback();
++      }
++    });
++  }
++
+   send(ChatMessage message) {
+     String trimmedText = message.text.trim();
+     if (trimmedText.isEmpty) {
+diff --git a/src/server/connection.rs b/src/server/connection.rs
+--- a/src/server/connection.rs
++++ b/src/server/connection.rs
+@@ -1313,6 +1313,7 @@ impl Connection {
+                         if press {
+                             msg.down = true;
+                         }
++                        CLICK_TIME.store(get_time(), Ordering::SeqCst);
+                         handle_key(&msg);
+                         if press {
+                             msg.down = false;
+@@ -3382,9 +3383,6 @@ impl Connection {
+                         return true;
+                     }
+                     if self.peer_keyboard_enabled() {
+-                        if is_enter(&me) {
+-                            CLICK_TIME.store(get_time(), Ordering::SeqCst);
+-                        }
+                         // https://github.com/rustdesk/rustdesk/issues/8633
+                         MOUSE_MOVE_TIME.store(get_time(), Ordering::SeqCst);
+ 
+diff --git a/src/server/input_service.rs b/src/server/input_service.rs
+--- a/src/server/input_service.rs
++++ b/src/server/input_service.rs
+@@ -1299,7 +1299,7 @@ pub fn handle_mouse_simulation_(evt: &MouseEvent, conn: i32) {
+         #[cfg(target_os = "macos")]
+         en.reset_flag();
+         for ref ck in evt.modifiers.iter() {
+-            if let Some(key) = KEY_MAP.get(&ck.value()) {
++            if let Some(key) = MODIFIER_MAP.get(&ck.value()) {
+                 #[cfg(target_os = "macos")]
+                 en.add_flag(key);
+                 #[cfg(not(target_os = "macos"))]
+@@ -1527,16 +1527,6 @@ fn handle_scale(scale: i32) {
+     }
+ }
+ 
+-pub fn is_enter(evt: &KeyEvent) -> bool {
+-    if let Some(key_event::Union::ControlKey(ck)) = evt.union {
+-        if ck.value() == ControlKey::Return.value() || ck.value() == ControlKey::NumpadEnter.value()
+-        {
+-            return true;
+-        }
+-    }
+-    return false;
+-}
+-
+ pub async fn lock_screen() {
+     cfg_if::cfg_if! {
+     if #[cfg(target_os = "linux")] {
+@@ -2628,6 +2618,8 @@ impl Drop for TemporaryMouseMoveHandle {
+ lazy_static::lazy_static! {
+     static ref MODIFIER_MAP: HashMap<i32, Key> = [
+         (ControlKey::Alt, Key::Alt),
++        (ControlKey::Menu, Key::Alt),
++        (ControlKey::Option, Key::Option),
+         (ControlKey::RAlt, Key::RightAlt),
+         (ControlKey::Control, Key::Control),
+         (ControlKey::RControl, Key::RightControl),
