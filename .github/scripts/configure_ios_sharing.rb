@@ -64,6 +64,8 @@ end
 runner.add_dependency(extension)
 embed = runner.new_copy_files_build_phase('Embed Broadcast Extension')
 embed.dst_subfolder_spec = '13'
+# Flutter's bundle-processing script must run after extension embedding.
+runner.build_phases.move(embed, 0)
 embed.add_file_reference(extension.product_reference).settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
 ui = project.new_target(:ui_test_bundle, 'SharingUITests', :ios, '15.0')
 ui.source_build_phase.add_file_reference(project.main_group.new_file('../../res/ios-mobile-sharing/SharingUITests.swift'))
