@@ -21,8 +21,8 @@ def main():
         log = Path(os.environ['RUNNER_TEMP']) / 'ios-sharing-ui.log'
         with log.open('w') as stream:
             result = subprocess.run(['xcodebuild', '-workspace', 'flutter/ios/Runner.xcworkspace',
-                '-scheme', 'PrivateSharing', '-configuration', 'Debug',
-                '-destination', 'platform=iOS Simulator,id=' + udid,
+                '-scheme', 'PrivateSharing', '-configuration', 'Debug', '-sdk', 'iphonesimulator',
+                '-destination', 'platform=iOS Simulator,arch=arm64,id=' + udid,
                 '-derivedDataPath', os.environ['RUNNER_TEMP'] + '/private-ios-derived',
                 'RUSTDESK_IOS_APPLICATION_ID=' + os.environ['MOBILE_APPLICATION_ID'],
                 'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES', 'ENABLE_DEBUG_DYLIB=NO',
@@ -31,7 +31,7 @@ def main():
                 stdout=stream, stderr=subprocess.STDOUT, timeout=600)
         output = log.read_text(errors='replace')
         if result.returncode or not re.search(r'Executed 1 test, with 0 failures', output):
-            print(safe_diagnostics('error: ' + output.replace('\n', '\nerror: '), os.environ))
+            print(safe_diagnostics(output, os.environ))
             raise RuntimeError('Native iOS sharing UI test did not pass exactly one case')
         source = os.environ['GITHUB_SHA']
         if not re.fullmatch('[a-f0-9]{40}', source):
