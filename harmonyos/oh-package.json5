@@ -1,0 +1,7 @@
+{
+  "name": "rustdesk-private-harmony",
+  "version": "1.5.14",
+  "description": "Native ARM64 controller development",
+  "dependencies": {},
+  "modelVersion": "6.0.0"
+}

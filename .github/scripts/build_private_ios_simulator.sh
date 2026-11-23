@@ -35,13 +35,27 @@ export IPHONEOS_DEPLOYMENT_TARGET=15.0
 # coreaudio-sys 0.2.15 passes the Rust -ios-sim triple directly to Clang.
 ios_sim_sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
 export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim="--target=arm64-apple-ios15.0-simulator -isysroot \"$ios_sim_sdk\""
-cargo build --locked --release --lib --target aarch64-apple-ios-sim --features flutter
+features=flutter
+sharing_args=(--metadata mobile-output/ios-simulator-build.json)
+sharing_define=false
+case "${RD_PRIVATE_MOBILE_SCREEN_SHARING:-false}" in
+  true)
+    features=flutter,mobile-view-only-host,ios-hostcore-compile-probe
+    sharing_args+=(--screen-sharing)
+    sharing_define=true
+    ruby .github/scripts/configure_ios_sharing.rb
+    ;;
+  false) ;;
+  *) echo 'Invalid iOS screen sharing selection' >&2; exit 1 ;;
+esac
+cargo build --locked --release --lib --target aarch64-apple-ios-sim --features "$features"
 test -s target/aarch64-apple-ios-sim/release/liblibrustdesk.a
 (
   cd flutter
   flutter pub get
   flutter build ios --simulator --debug --no-codesign --config-only \
     --dart-define=RD_PRIVATE_MOBILE_MANUAL_UPDATES=true \
+    --dart-define=RD_PRIVATE_MOBILE_SCREEN_SHARING="$sharing_define" \
     --build-name "$VERSION" --build-number "$BUILD_NUMBER"
   cd ios
   pod install
@@ -62,7 +76,7 @@ test -d "$app"
 python3 .github/scripts/verify_mobile_artifacts.py ios-simulator "$app" \
   --version "$VERSION" --build-number "$BUILD_NUMBER" \
   --application-id "$MOBILE_APPLICATION_ID" \
-  --metadata mobile-output/ios-simulator-build.json
+  "${sharing_args[@]}"
 ditto -c -k --sequesterRsrc --keepParent "$app" \
   "mobile-output/rustdesk-$VERSION-ios-simulator-arm64.app.zip"
 python3 - "$VERSION" <<'PY'
@@ -79,3 +93,7 @@ record.update(artifact=archive.name, size=archive.stat().st_size,
 metadata.write_text(json.dumps(record, indent=2) + '\n')
 PY
 python3 .github/scripts/smoke_ios_simulator.py "$app" "$MOBILE_APPLICATION_ID"
+
+if [[ "$sharing_define" == true ]]; then
+  python3 .github/scripts/run_ios_sharing_ui.py
+fi

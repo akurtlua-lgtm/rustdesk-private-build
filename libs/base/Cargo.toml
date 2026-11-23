@@ -9,6 +9,7 @@ edition = "2018"
 
 [features]
 default = []
+mobile-host-policy = []
 # The isolated Wayland socket-probe fallback (src/platform/linux/wayland_probe.rs).
 # Off by default so the base Wayland enumeration is untouched; the DRM login-screen
 # build (scrap/drm) turns it on.
@@ -50,8 +51,11 @@ winapi = { version = "0.3", features = [
 [target.'cfg(target_os = "macos")'.dependencies]
 osascript = "0.3"
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(all(target_os = "linux", not(target_env = "ohos")))'.dependencies]
 sctk = { package = "smithay-client-toolkit", version = "0.20.0", default-features = false, features = [
     "calloop",
 ] }
+users = { version = "0.11" }
+
+[target.'cfg(target_env = "ohos")'.dependencies]
 users = { version = "0.11" }

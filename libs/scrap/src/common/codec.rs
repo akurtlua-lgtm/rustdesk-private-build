@@ -1036,7 +1036,7 @@ fn disable_av1() -> bool {
     std::mem::size_of::<usize>() == 4
 }
 
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 pub fn test_av1() {
     use base::config::keys::OPTION_AV1_TEST;
     use hbb_common::rand::Rng;

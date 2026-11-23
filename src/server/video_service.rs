@@ -19,9 +19,9 @@
 // https://slhck.info/video/2017/03/01/rate-control.html
 
 use super::{display_service::check_display_changed, service::ServiceTmpl, video_qos::VideoQoS, *};
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(target_env = "ohos")))]
 use crate::common::SimpleCallOnReturn;
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(target_env = "ohos")))]
 use crate::platform::linux::is_x11;
 use crate::privacy_mode::{get_privacy_mode_conn_id, INVALID_PRIVACY_MODE_CONN_ID};
 #[cfg(windows)]
@@ -277,6 +277,8 @@ pub struct VideoService {
     sp: GenericService,
     idx: usize,
     source: VideoSource,
+    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+    capture_source: Arc<scrap::mobile_frame::FrameInbox>,
     #[cfg(windows)]
     dxgi_recovery_state: Arc<Mutex<DxgiRecoveryState>>,
 }
@@ -299,6 +301,10 @@ pub fn get_service_name(source: VideoSource, idx: usize) -> String {
     format!("{}{}", source.service_name_prefix(), idx)
 }
 
+#[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+pub(super) mod mobile_view_only;
+
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 pub fn new(source: VideoSource, idx: usize) -> GenericService {
     let _ = FRAME_FETCHED_NOTIFIERS
         .lock()
@@ -453,7 +459,7 @@ fn get_capturer_monitor(
     current: usize,
     portable_service_running: bool,
 ) -> ResultType<CapturerInfo> {
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
     {
         if !is_x11() {
             return super::wayland::get_capturer_for_display(current);
@@ -472,7 +478,7 @@ fn get_capturer_monitor(
 
     let display = displays.remove(current);
 
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
     if let Display::X11(inner) = &display {
         if let Err(err) = inner.get_shm_status() {
             log::warn!(
@@ -543,6 +549,7 @@ fn get_capturer_monitor(
     })
 }
 
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 fn get_capturer_camera(current: usize) -> ResultType<CapturerInfo> {
     let cameras = camera::Cameras::get_sync_cameras();
     let ncamera = cameras.len();
@@ -583,6 +590,11 @@ fn get_capturer_camera(current: usize) -> ResultType<CapturerInfo> {
         capturer,
     });
 }
+#[cfg(any(target_os = "ios", target_env = "ohos"))]
+fn get_capturer_camera(_current: usize) -> ResultType<CapturerInfo> {
+    bail!("Camera capture is unsupported on iOS");
+}
+
 fn get_capturer(
     source: VideoSource,
     current: usize,
@@ -601,9 +613,9 @@ fn run(vs: VideoService) -> ResultType<()> {
     // ensure_inited() is needed because clear() may be called.
     // to-do: wayland ensure_inited should pass current display index.
     // But for now, we do not support multi-screen capture on wayland.
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
     super::wayland::ensure_inited()?;
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
     let _wayland_call_on_ret = {
         // Increment active display count when starting
         let _display_count = super::wayland::increment_active_display_count();
@@ -629,7 +641,10 @@ fn run(vs: VideoService) -> ResultType<()> {
     #[cfg(windows)]
     let dxgi_recovery_state = vs.dxgi_recovery_state.clone();
     let sp = vs.sp;
+    #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
     let mut c = get_capturer(vs.source, display_idx, last_portable_service_running)?;
+    #[cfg(all(any(target_os = "ios", target_env = "ohos"), feature = "ios-hostcore-compile-probe"))]
+    let mut c = mobile_view_only::get_capturer(vs.capture_source)?;
     #[cfg(windows)]
     // ACCESS_LOST marks the next successful capturer creation as a recovery. This timestamp is
     // consumed once and temporarily holds off the normal WouldBlock-to-GDI fallback, giving the
@@ -721,7 +736,7 @@ fn run(vs: VideoService) -> ResultType<()> {
     #[cfg(windows)]
     start_uac_elevation_check();
 
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
     let mut would_block_count = 0u32;
     let mut yuv = Vec::new();
     let mut mid_data = Vec::new();
@@ -914,7 +929,7 @@ fn run(vs: VideoService) -> ResultType<()> {
                         try_gdi += 1;
                     }
                 }
-                #[cfg(target_os = "linux")]
+                #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
                 {
                     would_block_count += 1;
                     if !is_x11() {
@@ -999,7 +1014,7 @@ fn run(vs: VideoService) -> ResultType<()> {
                 return Err(err.into());
             }
             _ => {
-                #[cfg(target_os = "linux")]
+                #[cfg(all(target_os = "linux", not(target_env = "ohos")))]
                 {
                     would_block_count = 0;
                 }
@@ -1416,13 +1431,20 @@ pub fn make_display_changed_msg(
     opt_display: Option<DisplayInfo>,
     source: VideoSource,
 ) -> Option<Message> {
+    #[cfg(any(target_os = "ios", target_env = "ohos"))]
+    if matches!(source, VideoSource::Camera) {
+        return None;
+    }
     let display = match opt_display {
         Some(d) => d,
         None => match source {
             VideoSource::Monitor => display_service::get_display_info(display_idx)?,
+            #[cfg(not(any(target_os = "ios", target_env = "ohos")))]
             VideoSource::Camera => camera::Cameras::get_sync_cameras()
                 .get(display_idx)?
                 .clone(),
+            #[cfg(any(target_os = "ios", target_env = "ohos"))]
+            VideoSource::Camera => return None,
         },
     };
     let mut misc = Misc::new();
@@ -1436,7 +1458,7 @@ pub fn make_display_changed_msg(
             VideoSource::Monitor => display_service::capture_cursor_embedded(),
             VideoSource::Camera => false,
         },
-        #[cfg(not(target_os = "android"))]
+        #[cfg(not(any(target_os = "android", any(target_os = "ios", target_env = "ohos"))))]
         resolutions: Some(SupportedResolutions {
             resolutions: match source {
                 VideoSource::Monitor => {
@@ -1511,6 +1533,7 @@ pub fn set_take_screenshot(source: VideoSource, display_idx: usize, sid: String,
 }
 
 // We need to this function, because the `stride` may be larger than `width * 4`.
+#[cfg(not(any(target_os = "ios", target_env = "ohos")))]
 fn get_rgba_from_pixelbuf<'a>(pixbuf: &scrap::PixelBuffer<'a>) -> ResultType<Vec<u8>> {
     let w = pixbuf.width();
     let h = pixbuf.height();
@@ -1534,6 +1557,11 @@ fn get_rgba_from_pixelbuf<'a>(pixbuf: &scrap::PixelBuffer<'a>) -> ResultType<Vec
         }
         Ok(bit_flipped)
     }
+}
+
+#[cfg(any(target_os = "ios", target_env = "ohos"))]
+fn get_rgba_from_pixelbuf(_pixbuf: &scrap::PixelBuffer<'_>) -> ResultType<Vec<u8>> {
+    bail!("Screenshots are unsupported by the iOS host probe");
 }
 
 fn handle_screenshot(screenshot: Screenshot, msg: String, w: usize, h: usize, data: Vec<u8>) {

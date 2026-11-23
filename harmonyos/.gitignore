@@ -1,0 +1,10 @@
+.hvigor/
+.arkguard/
+**/build/
+**/.cxx/
+oh_modules/
+**/oh_modules/
+node_modules/
+local.properties
+entry/libs/
+!AppScope/resources/base/media/app_icon.svg
