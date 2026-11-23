@@ -114,8 +114,9 @@ def main():
         if not value or '\n' in value or '\r' in value:
             raise ValueError('Invalid Android signing password format')
         password.write_text(value)
+        # Reusing this single-line file for --key-pass would read past EOF.
         execute(apksigner, 'sign', '--ks', str(key), '--ks-key-alias', 'rustdesk-private',
-                '--ks-pass', 'file:' + str(password), '--key-pass', 'file:' + str(password),
+                '--ks-pass', 'file:' + str(password),
                 '--v1-signing-enabled', 'true', '--v2-signing-enabled', 'true',
                 '--v3-signing-enabled', 'true', '--v4-signing-enabled', 'false',
                 '--out', str(signed), str(android))

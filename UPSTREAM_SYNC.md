@@ -3,7 +3,7 @@
 上游：https://github.com/rustdesk/rustdesk ，跟踪 master 的新提交和正式发布。
 目标：https://github.com/akurtlua-lgtm/rustdesk-private-build 。
 
-源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.13，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
+源码基线及上次已观察版本记录在 `.github/upstream-baseline.json`。当前已集成 master 基线为 d46c7c52521a311d3ada8eeacd4f13b94e321258；最近已观察正式版为 1.5.3（2026-11-09，UTC+8）。本仓库当前自建版本为 1.5.14，版本独立递增，不能被较低的官方版本号覆盖或降级。初始订阅基线为 95cca3f661f635b3cc85c04935fe8d96d8f432ef。
 
 ## 必须保留的行为
 
@@ -110,3 +110,10 @@ Linux验证环境补充：首次候选中的Rust测试源码已编译，但旧Ub
 仅记录669cb8a的上述功能范围已采用；意大利语值按维护者政策留空，所以fully_integrated=false且该剩余范围继续pending。d40e1da移动端鼠标修复尚未进入本次桌面正式版。连续integrated_commit仍为d46c7c52521a311d3ada8eeacd4f13b94e321258；25项旧待评估加两个新范围，共27项pending，不能重复应用669的已完成运行路径。其余部分集成记录保持。此为发布后的文档/基线元数据提交，不重建同一版本或移动发布标签。
 
 拥有者后来明确提出Android/iOS及原生/兼容版鸿蒙开发，相关源码和构建在独立移动候选分支进行，不能将它们的开发产物视为本次桌面正式版或借此扩大定时桌面同步的发布范围。账号后台、生产服务器、密钥、防火墙、代理及本机权限未改。
+
+
+## 已完成移动基础适配：1.5.14（构建82）
+
+2026-11-19，固定源码 `5d8a17ba9c85f279b857ccface5843292c882de3` 的候选 [44480941607](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/44480941607) 八任务成功、发布跳过；同源码经 PR #9 快进 main，[正式 44499127062](https://github.com/akurtlua-lgtm/rustdesk-private-build/actions/runs/44499127062) 九任务全部成功。[v1.5.14](https://github.com/akurtlua-lgtm/rustdesk-private-build/releases/tag/v1.5.14) 七个实际完整安装包、来源、大小、SHA256、实际日志隐私、更新元数据及 Ed25519 签名已独立核验，稳定 latest 指向该版本。原有账号过滤、严格 Key、原生回归和更新签名门禁均保留。
+
+本次完整采用 d40e1da 移动虚拟鼠标坐标修复，含对应 VM 回归；连续 integrated_commit 仍为 d46c7c52521a311d3ada8eeacd4f13b94e321258，其余 26 项 pending 不变。此前 1.5.13 段落描述的是该历史版本的范围，不代表当前状态。移动基础适配的现有路径变化和平台验收边界见 MOBILE_DEVELOPMENT.md。iOS 共享引擎、原生鸿蒙仍在独立草稿，不属于桌面正式版。后续移动签名脚本及本文档提交不是桌面 v1.5.14 的源码提交，不移动其标签、不重复构建同版本桌面包。

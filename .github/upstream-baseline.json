@@ -33,7 +33,6 @@
     "bca767fcdb8a0b76938b7aeb4ab2782062c53237",
     "a98450a995fc0ecc7245494d4e1d1e592bf1f203",
     "985429669a011729705c293bb6c646024bc3845d",
-    "d40e1da715fa1694ff4712f394b81a6df6bcd612",
     "669cb8ac62aa20d3626395877d7dd0357aec7ed2"
   ],
   "partially_integrated_commits": [
@@ -97,6 +96,15 @@
       "release": "v1.5.13",
       "source_commit": "4a7b5b01c2499f8e3a7a398ad34b5aff7fbf19fb",
       "formal_run": 44449121745,
+      "verified_at": "2026-11-19"
+    },
+    {
+      "commit": "d40e1da715fa1694ff4712f394b81a6df6bcd612",
+      "scope": "Mobile virtual mouse coordinate correction for safe-area and canvas offsets; VM regression, unchanged direct touch and permission gates",
+      "fully_integrated": true,
+      "release": "v1.5.14",
+      "source_commit": "5d8a17ba9c85f279b857ccface5843292c882de3",
+      "formal_run": 44499127062,
       "verified_at": "2026-11-19"
     }
   ]
