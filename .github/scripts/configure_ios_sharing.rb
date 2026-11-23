@@ -34,6 +34,7 @@ runner_entitlements = Xcodeproj::Plist.read_from_path(root.join('flutter/ios/Run
 Xcodeproj::Plist.write_to_path(runner_entitlements.merge(entitlements), root.join('flutter/ios/Runner/Sharing.entitlements'))
 info = Xcodeproj::Plist.read_from_path(root.join('res/ios-host-probe/Info.plist'))
 info['NSExtension']['NSExtensionPrincipalClass'] = '$(PRODUCT_MODULE_NAME).SampleHandler'
+info['CFBundleDisplayName'] = 'RustDesk screen sharing'
 info['RustDeskSharingAppGroup'] = "group.#{id}.sharing"
 info['RustDeskSharingKeychainGroup'] = "$(AppIdentifierPrefix)#{id}.sharing"
 Xcodeproj::Plist.write_to_path(info, root.join('flutter/ios/BroadcastShare-Info.plist'))

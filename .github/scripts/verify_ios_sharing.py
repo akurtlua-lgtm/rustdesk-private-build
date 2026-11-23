@@ -7,6 +7,9 @@ def verify(path, version, build_number, application_id, app_symbols, run):
     extension = path / 'PlugIns/BroadcastShare.appex'
     with (extension / 'Info.plist').open('rb') as stream:
         info = plistlib.load(stream)
+    display_name = info.get('CFBundleDisplayName')
+    if not isinstance(display_name, str) or not display_name.strip():
+        raise ValueError('Missing sharing extension display name')
     expected = {'CFBundleIdentifier': application_id + '.BroadcastShare',
                 'CFBundleShortVersionString': version, 'CFBundleVersion': build_number,
                 'CFBundleSupportedPlatforms': ['iPhoneSimulator']}

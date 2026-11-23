@@ -49,7 +49,7 @@ class MobileArtifactTests(unittest.TestCase):
             (app / 'Info.plist').write_bytes(plistlib.dumps(groups))
             info = dict(groups, CFBundleIdentifier='private.app.BroadcastShare', CFBundleExecutable='BroadcastShare',
                         CFBundleShortVersionString='1.5.14', CFBundleVersion='82',
-                        CFBundleSupportedPlatforms=['iPhoneSimulator'],
+                        CFBundleSupportedPlatforms=['iPhoneSimulator'], CFBundleDisplayName='RustDesk screen sharing',
                         NSExtension=dict(NSExtensionPointIdentifier='com.apple.broadcast-services-upload'))
             (extension / 'Info.plist').write_bytes(plistlib.dumps(info))
             required = ('initialize', 'set_password', 'configure_servers', 'servers', 'id', 'begin',
@@ -61,6 +61,11 @@ class MobileArtifactTests(unittest.TestCase):
                 return {'lipo': 'arm64', 'vtool': ' platform IOSSIMULATOR', 'nm': symbols,
                         'otool': dependencies}[args[1]]
             self.assertTrue(verify(app, '1.5.14', '82', 'private.app', app_symbols, inspect)['broadcast_extension_inspected'])
+            invalid = {key: value for key, value in info.items() if key != 'CFBundleDisplayName'}
+            (extension / 'Info.plist').write_bytes(plistlib.dumps(invalid))
+            with self.assertRaisesRegex(ValueError, 'display name'):
+                verify(app, '1.5.14', '82', 'private.app', app_symbols, inspect)
+            (extension / 'Info.plist').write_bytes(plistlib.dumps(info))
             symbols = symbols.replace('_rd_mobile_host_run', '_missing_run')
             with self.assertRaisesRegex(ValueError, 'actual native host ABI'):
                 verify(app, '1.5.14', '82', 'private.app', app_symbols, inspect)
