@@ -29,13 +29,14 @@ struct SharingBootstrap: Codable {
         }
         return url
     }
-    static func snapshot(_ getter: (UnsafeMutablePointer<UInt8>?, Int) -> Int) throws -> Data {
-        let size = getter(nil, 0)
-        guard size > 1, size <= 16384 else { throw Failure.configuration }
+    static func snapshot<Size: BinaryInteger>(_ getter: (UnsafeMutablePointer<UInt8>?, Int) -> Size) throws -> Data {
+        guard let size = Int(exactly: getter(nil, 0)), size > 1, size <= 16384 else {
+            throw Failure.configuration
+        }
         var bytes = [UInt8](repeating: 0, count: size)
         defer { _ = bytes.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) } }
         let written = bytes.withUnsafeMutableBufferPointer { getter($0.baseAddress, $0.count) }
-        guard written == size, bytes[size - 1] == 0 else { throw Failure.configuration }
+        guard Int(exactly: written) == size, bytes[size - 1] == 0 else { throw Failure.configuration }
         return Data(bytes.dropLast())
     }
     static func query() throws -> [String: Any] {
