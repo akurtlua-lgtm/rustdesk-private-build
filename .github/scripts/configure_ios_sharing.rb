@@ -73,7 +73,8 @@ ui.source_build_phase.add_file_reference(project.main_group.new_file('../../res/
 ui.add_dependency(runner)
 ui.build_configurations.each do |config|
   config.build_settings.merge!({ 'PRODUCT_BUNDLE_IDENTIFIER' => id + '.SharingUITests',
-    'TEST_TARGET_NAME' => 'Runner', 'SWIFT_VERSION' => '5.0', 'GENERATE_INFOPLIST_FILE' => 'YES' })
+    'PRODUCT_NAME' => 'SharingUITests', 'TEST_TARGET_NAME' => 'Runner',
+    'SWIFT_VERSION' => '5.0', 'GENERATE_INFOPLIST_FILE' => 'YES' })
 end
 scheme = Xcodeproj::XCScheme.new
 scheme.add_build_target(runner)
