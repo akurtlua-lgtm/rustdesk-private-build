@@ -13,7 +13,9 @@ from smoke_ios_simulator import select_compatible_iphone, simctl
 def main():
     sdk = subprocess.check_output(['xcrun', '--sdk', 'iphonesimulator', '--show-sdk-version'], text=True).strip()
     device = select_compatible_iphone(json.loads(simctl('list', 'devices', 'available', '--json'))['devices'], sdk)
-    udid = str(uuid.UUID(device['udid']))
+    udid = device['udid']
+    uuid.UUID(udid)
+    print(f'UI simulator SDK {sdk}, device {device["name"]}, id {udid}', flush=True)
     if device['state'] != 'Booted':
         simctl('boot', udid)
     try:

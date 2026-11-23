@@ -57,7 +57,7 @@
 
 新增实现集中于 `src/ohos_ffi.rs`、`src/client/ohos_audio.rs`、`src/platform/ohos_account.rs`、`harmonyos/` 与独立构建脚本。没有修改桌面正式发布逻辑、服务器、账号后台、密钥、防火墙、代理或本机权限。
 
-已知未通过/未完成：Rust Clippy 的 `-D warnings` 仍被共享库42项既有 lint 阻断，不能称为 Clippy 全绿；该角色审查因此停止，另行的代码/安全/C++/UI静态审查不替代此检查。尚无原生 OHOS 运行环境/手机，未验证实际初始化、TLS请求、画面、音频、输入权限拒绝与退出压力；release HAP/全平台回归仍须最终候选 CI。iOS 手机屏幕共享/被控核心和原生鸿蒙手机采集均尚未实现，不把主控编译成功当作完成全部手机需求。
+已知未通过/未完成：Rust Clippy 的 `-D warnings` 仍被共享库42项既有 lint 阻断，不能称为 Clippy 全绿；该角色审查因此停止，另行的代码/安全/C++/UI静态审查不替代此检查。尚无原生 OHOS 运行环境/手机，未验证实际初始化、TLS请求、画面、音频、输入权限拒绝与退出压力；release HAP/全平台回归仍须最终候选 CI。上述早期主控阶段尚未接入 iOS 被控核心和鸿蒙手机采集；2026-11-23 的默认关闭共享候选已接入这些模块，当前边界见 IOS_SHARING_PROGRESS.md 与 OHOS_SHARING_PROGRESS.md。SDK/合成回归、模拟器界面与真实系统录屏、后台、签名及真机验收分别记录，不把前者当作完成全部手机需求。
 
 ## 手机候选补充验证
 
