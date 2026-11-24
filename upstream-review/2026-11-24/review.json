@@ -1,0 +1,1079 @@
+{
+  "checked_at": "2026-11-24",
+  "review_level": "scope and dependency triage; NOT native compatibility approval",
+  "base_main": "5479b701e2b3ff3c1485a6a641373e8f7abfb3bd",
+  "previous_published_review_head": "8e1433d4a24852302700c4dd54e8b901f350077c",
+  "observed_head": "51f94394ce61e1f3d26229565c326b2862cbdd1f",
+  "unpublished_observation_20261123": "5a64e7a61ff88b81d576b1f7c5789343f26438d8",
+  "new_since_published_review": 8,
+  "total_new_since_target_last_seen": 23,
+  "target_last_seen": "669cb8ac62aa20d3626395877d7dd0357aec7ed2",
+  "integrated_commit": "d46c7c52521a311d3ada8eeacd4f13b94e321258",
+  "stable_release": "v1.5.14",
+  "version": "1.5.14+82",
+  "upstream_stable": "1.5.3",
+  "commits": [
+    {
+      "sha": "534b047525a2ac3cfea4cd2be5e551298b95f436",
+      "title": "Send navigation, Windows and Menu keys with the extended flag on Windows (#17174)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/534b047525a2ac3cfea4cd2be5e551298b95f436",
+      "files": [
+        {
+          "path": "libs/enigo/src/win/win_impl.rs",
+          "status": "modified",
+          "changes": 6,
+          "patch_present": true
+        }
+      ],
+      "source_response_sha256": "40299a48fde930480050c62e2902d714479c015ce1bbbce18215aca01adb8a1e",
+      "parents": [
+        "8e1433d4a24852302700c4dd54e8b901f350077c"
+      ]
+    },
+    {
+      "sha": "5a64e7a61ff88b81d576b1f7c5789343f26438d8",
+      "title": "macOS: implement View Camera (remote camera viewing) (#17135)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/5a64e7a61ff88b81d576b1f7c5789343f26438d8",
+      "files": [
+        {
+          "path": "Cargo.lock",
+          "status": "modified",
+          "changes": 11,
+          "patch_present": true
+        },
+        {
+          "path": "Cargo.toml",
+          "status": "modified",
+          "changes": 3,
+          "patch_present": true
+        },
+        {
+          "path": "flutter/macos/Runner/DebugProfile.entitlements",
+          "status": "modified",
+          "changes": 2,
+          "patch_present": true
+        },
+        {
+          "path": "flutter/macos/Runner/Info.plist",
+          "status": "modified",
+          "changes": 2,
+          "patch_present": true
+        },
+        {
+          "path": "flutter/macos/Runner/Release.entitlements",
+          "status": "modified",
+          "changes": 2,
+          "patch_present": true
+        },
+        {
+          "path": "libs/scrap/Cargo.toml",
+          "status": "modified",
+          "changes": 3,
+          "patch_present": true
+        },
+        {
+          "path": "libs/scrap/src/common/camera.rs",
+          "status": "modified",
+          "changes": 71,
+          "patch_present": true
+        },
+        {
+          "path": "libs/scrap/src/common/quartz.rs",
+          "status": "modified",
+          "changes": 49,
+          "patch_present": true
+        },
+        {
+          "path": "res/osx_camera_info.plist",
+          "status": "added",
+          "changes": 2,
+          "patch_present": true
+        },
+        {
+          "path": "src/server/connection.rs",
+          "status": "modified",
+          "changes": 24,
+          "patch_present": true
+        }
+      ],
+      "source_response_sha256": "ca3e81b85d4e6c3006e500dd409ca201f9ffb7b0e6c892b592ca6a217cb993d3",
+      "parents": [
+        "90f3fb136b6ea804643b6125ef9fe2d7bbc6551c"
+      ]
+    },
+    {
+      "sha": "90f3fb136b6ea804643b6125ef9fe2d7bbc6551c",
+      "title": "fix(linux): capture Wayland portals that offer only DMA-BUF (niri) (#17175)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/90f3fb136b6ea804643b6125ef9fe2d7bbc6551c",
+      "files": [
+        {
+          "path": "libs/scrap/src/wayland/pipewire.rs",
+          "status": "modified",
+          "changes": 324,
+          "patch_present": true
+        }
+      ],
+      "source_response_sha256": "29917890efc013eb5a68a7d6b6f03db5d3ca8fe189f6c1f4be08d72c0a669eb8",
+      "parents": [
+        "be181a9d182491a5859fc1bf3ced99bc5aa86a8c"
+      ]
+    },
+    {
+      "sha": "be181a9d182491a5859fc1bf3ced99bc5aa86a8c",
+      "title": "Fix/tcp websocket error propagation (#16946)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/be181a9d182491a5859fc1bf3ced99bc5aa86a8c",
+      "files": [
+        {
+          "path": "libs/hbb_common",
+          "status": "modified",
+          "changes": 2,
+          "patch_present": true
+        },
+        {
+          "path": "src/platform/macos.rs",
+          "status": "modified",
+          "changes": 37,
+          "patch_present": true
+        },
+        {
+          "path": "src/rendezvous_mediator.rs",
+          "status": "modified",
+          "changes": 11,
+          "patch_present": true
+        }
+      ],
+      "source_response_sha256": "cbe05823592d90a2ece0814e0f118bb6ba07824a1d9e4a9fa2bd39d8c8d8acf7",
+      "parents": [
+        "534b047525a2ac3cfea4cd2be5e551298b95f436"
+      ]
+    },
+    {
+      "sha": "51f94394ce61e1f3d26229565c326b2862cbdd1f",
+      "title": "refact: Remove unused selinux check",
+      "url": "https://github.com/rustdesk/rustdesk/commit/51f94394ce61e1f3d26229565c326b2862cbdd1f",
+      "files": [
+        {
+          "path": "flutter/lib/web/bridge.dart",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/flutter_ffi.rs",
+          "status": "modified",
+          "changes": 11,
+          "patch_present": true
+        },
+        {
+          "path": "src/platform/linux.rs",
+          "status": "modified",
+          "changes": 18,
+          "patch_present": true
+        }
+      ],
+      "source_response_sha256": "44036d935ebdc8d5ad3119088dc94a55e3d457c740adf6a894a98bdc7f178932",
+      "parents": [
+        "cc3300d1bbe3e832e8882daf52df12fe5b2e0100"
+      ]
+    },
+    {
+      "sha": "66fabdf305eff91385e4944c0565fa8ef5a7b730",
+      "title": "docs: move video codec from hbb_common to scrap in README file structure (#17189)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/66fabdf305eff91385e4944c0565fa8ef5a7b730",
+      "files": [
+        {
+          "path": "README.md",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        }
+      ],
+      "source_response_sha256": "0776b02702128172db5c982a020ea325589f448d96ec90b7c4213c1bb20c1d18",
+      "parents": [
+        "5a64e7a61ff88b81d576b1f7c5789343f26438d8"
+      ]
+    },
+    {
+      "sha": "9724512429b053be04cdb843345e99ddcccdb80e",
+      "title": "feat(linux): ship DRM capture in every Linux package behind allow-drm-capture (#17089)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/9724512429b053be04cdb843345e99ddcccdb80e",
+      "files": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "status": "modified",
+          "changes": 9,
+          "patch_present": true
+        },
+        {
+          "path": ".github/workflows/flutter-build.yml",
+          "status": "modified",
+          "changes": 408,
+          "patch_present": true
+        },
+        {
+          "path": "AGENTS.md",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "build.py",
+          "status": "modified",
+          "changes": 199,
+          "patch_present": true
+        },
+        {
+          "path": "flutter/lib/consts.dart",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "flutter/lib/desktop/pages/desktop_home_page.dart",
+          "status": "modified",
+          "changes": 24,
+          "patch_present": true
+        },
+        {
+          "path": "flutter/lib/desktop/pages/desktop_setting_page.dart",
+          "status": "modified",
+          "changes": 13,
+          "patch_present": true
+        },
+        {
+          "path": "libs/base/src/config/keys.rs",
+          "status": "modified",
+          "changes": 2,
+          "patch_present": true
+        },
+        {
+          "path": "res/PKGBUILD",
+          "status": "modified",
+          "changes": 7,
+          "patch_present": true
+        },
+        {
+          "path": "res/rpm-flutter-suse.spec",
+          "status": "modified",
+          "changes": 10,
+          "patch_present": true
+        },
+        {
+          "path": "res/rpm-flutter.spec",
+          "status": "modified",
+          "changes": 10,
+          "patch_present": true
+        },
+        {
+          "path": "src/core_main.rs",
+          "status": "modified",
+          "changes": 15,
+          "patch_present": true
+        },
+        {
+          "path": "src/flutter_ffi.rs",
+          "status": "modified",
+          "changes": 6,
+          "patch_present": true
+        },
+        {
+          "path": "src/hbbs_http/sync.rs",
+          "status": "modified",
+          "changes": 8,
+          "patch_present": true
+        },
+        {
+          "path": "src/ipc.rs",
+          "status": "modified",
+          "changes": 22,
+          "patch_present": true
+        },
+        {
+          "path": "src/ipc/drm.rs",
+          "status": "modified",
+          "changes": 6,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ar.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/az.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/be.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/bg.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ca.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/cn.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/cs.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/da.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/de.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/el.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/en.rs",
+          "status": "modified",
+          "changes": 3,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/eo.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/es.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/et.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/eu.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/fa.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/fi.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/fr.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ge.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/gl.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/gu.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/he.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/hi.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/hr.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/hu.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/id.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/it.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ja.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ko.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/kz.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/lt.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/lv.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ml.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/nb.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/nl.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/pl.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/pt_BR.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/pt_PT.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ro.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ru.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sc.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sk.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sl.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sq.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sr.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sv.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ta.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/template.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/th.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/tr.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/tw.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/uk.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ur.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/vi.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/platform/linux.rs",
+          "status": "modified",
+          "changes": 168,
+          "patch_present": true
+        },
+        {
+          "path": "src/server/connection.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/server/display_service.rs",
+          "status": "modified",
+          "changes": 9,
+          "patch_present": true
+        },
+        {
+          "path": "src/server/drm_capturer.rs",
+          "status": "modified",
+          "changes": 26,
+          "patch_present": true
+        },
+        {
+          "path": "src/server/input_service.rs",
+          "status": "modified",
+          "changes": 4,
+          "patch_present": true
+        },
+        {
+          "path": "src/server/wayland.rs",
+          "status": "modified",
+          "changes": 23,
+          "patch_present": true
+        }
+      ],
+      "source_response_sha256": "49e85dfc6b917ceb26e5599a28c77d7b1b60a20a55841dc05b7e3780d232f5c7",
+      "parents": [
+        "66fabdf305eff91385e4944c0565fa8ef5a7b730"
+      ]
+    },
+    {
+      "sha": "cc3300d1bbe3e832e8882daf52df12fe5b2e0100",
+      "title": "refact: Remove outdated selinux helper card (#17197)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/cc3300d1bbe3e832e8882daf52df12fe5b2e0100",
+      "files": [
+        {
+          "path": "flutter/lib/desktop/pages/desktop_home_page.dart",
+          "status": "modified",
+          "changes": 18,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ar.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/az.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/be.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/bg.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ca.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/cn.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/cs.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/da.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/de.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/el.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/en.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/eo.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/es.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/et.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/eu.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/fa.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/fi.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/fr.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ge.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/gl.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/gu.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/he.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/hi.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/hr.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/hu.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/id.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/it.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ja.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ko.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/kz.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/lt.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/lv.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ml.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/nb.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/nl.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/pl.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/pt_BR.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/pt_PT.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ro.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ru.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sc.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sk.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sl.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sq.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sr.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/sv.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ta.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/template.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/th.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/tr.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/tw.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/uk.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/ur.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        },
+        {
+          "path": "src/lang/vi.rs",
+          "status": "modified",
+          "changes": 1,
+          "patch_present": true
+        }
+      ],
+      "source_response_sha256": "bd48a93280021b5cb3a254bcb8bf2bac3b34ef6c28a975e0db71628c4ea42eef",
+      "parents": [
+        "9724512429b053be04cdb843345e99ddcccdb80e"
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "hbb-common",
+      "old": "fae47e024dd83cef6aaecde0aa7d11731df11649",
+      "new": "450cc1d7b729cfa8d19b5a7527c9cc2fe54cf5eb",
+      "total_commits": 1,
+      "commits": [
+        {
+          "sha": "450cc1d7b729cfa8d19b5a7527c9cc2fe54cf5eb",
+          "title": "fix: preserve TCP and WebSocket error causes"
+        }
+      ],
+      "files": [
+        "src/tcp.rs",
+        "src/websocket.rs"
+      ],
+      "adopted": false
+    },
+    {
+      "name": "nokhwa",
+      "old": "c2f74662b6ce117f7f94301693fdfadc0b1ec91a",
+      "new": "f149b074d081004920495f04444503a2379ca795",
+      "total_commits": 7,
+      "commits": [
+        {
+          "sha": "ccdc9f57a1bdc53755c58b4ecf451b02505331d6",
+          "title": "macos: fix bi-planar (NV12) camera frame capture"
+        },
+        {
+          "sha": "8920ff8f96cfebb7c6befd9d1d8e6b7f18d1c231",
+          "title": "macos: request 420v (video range) NV12 and tighten the planar path"
+        },
+        {
+          "sha": "0a8bf56dc93b805edaa227c86ef20f2bd74cc57f",
+          "title": "macos: time out frame_raw instead of blocking forever"
+        },
+        {
+          "sha": "656e9f966801b757e502cbbedf015e85f607f912",
+          "title": "macos: release the configuration lock"
+        },
+        {
+          "sha": "137a327523b95c1727cf8fcd6b87c26909752b27",
+          "title": "Merge pull request #7 from filipklein5/macos-nv12-fix"
+        },
+        {
+          "sha": "f6ef2aa15ccbf7ec3df859f8f32a5219dc060f52",
+          "title": "macos: don't link iOS-only AVFoundation constants"
+        },
+        {
+          "sha": "f149b074d081004920495f04444503a2379ca795",
+          "title": "Merge pull request #8 from filipklein5/macos-10_14-link-fix"
+        }
+      ],
+      "files": [
+        "nokhwa-bindings-macos/src/lib.rs",
+        "src/backends/capture/avfoundation.rs"
+      ],
+      "adopted": false
+    }
+  ],
+  "runtime_source_changed": false,
+  "native_tests_executed": false,
+  "workflow_dispatched": false,
+  "release_created": false,
+  "baseline_advanced": false,
+  "production_changed": false,
+  "pr3": {
+    "state": "OPEN/DRAFT",
+    "head": "4f569a35bb3c5f6ed32ca9b5f13aca1adec64536",
+    "comments": 0,
+    "review_comments": 0,
+    "blocker": "Windows <=1.3.7 FD_FILESIZE empty-file compatibility remains unresolved"
+  },
+  "decision": "hold stable; append triage to existing draft PR16, no repeated candidate builds"
+}
