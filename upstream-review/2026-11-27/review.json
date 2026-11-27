@@ -1,0 +1,41 @@
+{
+  "checked_at": "2026-11-27",
+  "base_main": "5479b701e2b3ff3c1485a6a641373e8f7abfb3bd",
+  "previous_observed": "a0c0963c483fc8f1aeed4547787d1673adcb583c",
+  "observed_head": "45e34a69239c2c2467fd02af8ee97263ff26ef23",
+  "new_commits": [
+    {
+      "sha": "45e34a69239c2c2467fd02af8ee97263ff26ef23",
+      "parents": [
+        "a0c0963c483fc8f1aeed4547787d1673adcb583c"
+      ],
+      "title": "Update it.rs (#17265)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/45e34a69239c2c2467fd02af8ee97263ff26ef23"
+    }
+  ],
+  "total_new_since_target_last_seen": 30,
+  "net_files": [
+    {
+      "path": "src/lang/it.rs",
+      "status": "modified",
+      "changes": 10
+    }
+  ],
+  "submodule_changes": [],
+  "dependency_changes": [],
+  "upstream_compare_sha256": "82d32f537aad5d1f1b340ffcd60bbcf3c3fda4a9768cf24af9995f3ab639c4a4",
+  "upstream_stable": "1.5.3",
+  "stable_release": "v1.5.14",
+  "version": "1.5.14+82",
+  "integrated_commit": "d46c7c52521a311d3ada8eeacd4f13b94e321258",
+  "pending_scopes_in_main": 26,
+  "decision": "defer Italian DRM translations under maintainer policy and pending DRM runtime scope; no new build",
+  "pr3_unchanged": true,
+  "pr16_reused": true,
+  "runtime_source_changed": false,
+  "native_tests_executed": false,
+  "workflow_dispatched": false,
+  "release_created": false,
+  "baseline_advanced": false,
+  "production_changed": false
+}
