@@ -1,0 +1,89 @@
+{
+  "checked_at": "2026-11-25",
+  "base_main": "5479b701e2b3ff3c1485a6a641373e8f7abfb3bd",
+  "previous_observed": "51f94394ce61e1f3d26229565c326b2862cbdd1f",
+  "observed_head": "a0c0963c483fc8f1aeed4547787d1673adcb583c",
+  "total_new_since_target_last_seen": 29,
+  "new_commits": [
+    {
+      "sha": "e5afd9c75b540e09f23590b297e0782a843b52fc",
+      "parents": [
+        "51f94394ce61e1f3d26229565c326b2862cbdd1f"
+      ],
+      "title": "Add pull request template",
+      "url": "https://github.com/rustdesk/rustdesk/commit/e5afd9c75b540e09f23590b297e0782a843b52fc"
+    },
+    {
+      "sha": "003637af9fbd7d921a8dd075a97dd9d7d7dca1b9",
+      "parents": [
+        "e5afd9c75b540e09f23590b297e0782a843b52fc"
+      ],
+      "title": "PR template: require video or screenshots for UI changes",
+      "url": "https://github.com/rustdesk/rustdesk/commit/003637af9fbd7d921a8dd075a97dd9d7d7dca1b9"
+    },
+    {
+      "sha": "0039611d7bbbc28d2126dfc29336efa07f0fc871",
+      "parents": [
+        "003637af9fbd7d921a8dd075a97dd9d7d7dca1b9"
+      ],
+      "title": "PR template: link the approval and testing policies in visible text",
+      "url": "https://github.com/rustdesk/rustdesk/commit/0039611d7bbbc28d2126dfc29336efa07f0fc871"
+    },
+    {
+      "sha": "b03e55e2665efe8dfb537a75461dd29061721f2f",
+      "parents": [
+        "0039611d7bbbc28d2126dfc29336efa07f0fc871"
+      ],
+      "title": "PR template: match the \"may be closed\" wording of discussion #17223",
+      "url": "https://github.com/rustdesk/rustdesk/commit/b03e55e2665efe8dfb537a75461dd29061721f2f"
+    },
+    {
+      "sha": "a02f76c48dc48299c0da0c93c2f15b01960b98a2",
+      "parents": [
+        "b03e55e2665efe8dfb537a75461dd29061721f2f"
+      ],
+      "title": "PR template: ask for cross-review by other AI models",
+      "url": "https://github.com/rustdesk/rustdesk/commit/a02f76c48dc48299c0da0c93c2f15b01960b98a2"
+    },
+    {
+      "sha": "a0c0963c483fc8f1aeed4547787d1673adcb583c",
+      "parents": [
+        "a02f76c48dc48299c0da0c93c2f15b01960b98a2"
+      ],
+      "title": "Add PR evidence check and AI cross-review section",
+      "url": "https://github.com/rustdesk/rustdesk/commit/a0c0963c483fc8f1aeed4547787d1673adcb583c"
+    }
+  ],
+  "net_files": [
+    {
+      "path": ".github/pull_request_template.md",
+      "status": "added",
+      "additions": 99,
+      "deletions": 0
+    },
+    {
+      "path": ".github/workflows/pr-evidence-check.yml",
+      "status": "added",
+      "additions": 156,
+      "deletions": 0
+    }
+  ],
+  "submodule_changes": [],
+  "dependency_changes": [],
+  "upstream_compare_sha256": "7d93f6d723939d41ea355024d458dc89251a27452d8841fb5eb08a670a8820aa",
+  "stable_release": "v1.5.14",
+  "version": "1.5.14+82",
+  "upstream_stable": "1.5.3",
+  "integrated_commit": "d46c7c52521a311d3ada8eeacd4f13b94e321258",
+  "target_last_seen": "669cb8ac62aa20d3626395877d7dd0357aec7ed2",
+  "pending_scopes_in_main": 26,
+  "pr3_unchanged": true,
+  "builds_running_or_queued": [],
+  "runtime_source_changed": false,
+  "native_tests_executed": false,
+  "workflow_dispatched": false,
+  "release_created": false,
+  "baseline_advanced": false,
+  "production_changed": false,
+  "decision": "hold stable; upstream changes are contributor metadata only, do not import upstream-specific policies or privileged PR automation automatically"
+}

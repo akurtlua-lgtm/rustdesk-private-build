@@ -1,0 +1,145 @@
+{
+  "checked_at": "2026-11-21",
+  "repository": "rustdesk/rustdesk",
+  "previous_observed": "669cb8ac62aa20d3626395877d7dd0357aec7ed2",
+  "observed_head": "eedf39e3cb1a4007374f134ff6fd5ec007bcb6b7",
+  "upstream_stable": "1.5.3",
+  "base_main": "5479b701e2b3ff3c1485a6a641373e8f7abfb3bd",
+  "stable_release": "v1.5.14",
+  "integrated_commit": "d46c7c52521a311d3ada8eeacd4f13b94e321258",
+  "commits": [
+    {
+      "sha": "0d1cc898288dc5547402ef38164f8555ad10d6a0",
+      "title": "Fix/privacy mode2 initialization (#17090)",
+      "files": [
+        "libs/scrap/src/common/dxgi.rs",
+        "libs/scrap/src/dxgi/mod.rs",
+        "src/privacy_mode.rs",
+        "src/privacy_mode/win_virtual_display.rs",
+        "src/server/connection.rs",
+        "src/server/display_service.rs",
+        "src/virtual_display_manager.rs"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "742e507ca66cec7858462ab912d2550628a94de1",
+      "title": "Feat: Windows, and an option to skip firewall rules (#17107)",
+      "files": [
+        "res/msi/Package/Components/Regs.wxs",
+        "res/msi/Package/Components/RustDesk.wxs",
+        "src/platform/windows.rs"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "dcb6291116158c7cbd9cb40b5a5c5f7986468904",
+      "title": "Fix/windows clipboard response leak (#17113)",
+      "files": [
+        "libs/clipboard/src/windows/wf_cliprdr.c"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "c50ae975128e3061ee5c209f4eb8fb4a2605380f",
+      "title": "fix: omit preset address book password from sysinfo uploads (#17130)",
+      "files": [
+        "src/hbbs_http/sync.rs"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "304e60492dc87717767c2aab7191c7bbe3af1fe7",
+      "title": "fix(windows): show an installation tip for a missing service (#16948)",
+      "files": [
+        "flutter/lib/desktop/pages/desktop_home_page.dart",
+        "src/platform/mod.rs",
+        "src/platform/windows.rs",
+        "src/ui/index.tis",
+        "src/ui_interface.rs"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "a3b42dfb90dc4742dfdf69b4281c1a73118eb8c0",
+      "title": "docs: update Chinese README file structure (#17139)",
+      "files": [
+        "docs/README-ZH.md"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "1beb7b30c681cda41565ba875e9dcb7958fdf0ab",
+      "title": "docs: fix the CONTRIBUTING link in README-PTBR (#17132)",
+      "files": [
+        "docs/README-PTBR.md"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "326deef884f6937f384bc880b7b0da4306670a06",
+      "title": "Update Italian language (#17126)",
+      "files": [
+        "src/lang/it.rs"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "da85f7ae699471bd07135d5f44beeba2eabb4c96",
+      "title": "i18n(fa): overhaul Persian translations, fix RTL word ordering, and standardize terminology (#17101)",
+      "files": [
+        "src/lang/fa.rs"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "4171ba4d177ff9dab8d1abf6638edb6e87684ac5",
+      "title": "Translate elevated_foreground_window_tip in Turkish (#17093)",
+      "files": [
+        "src/lang/tr.rs"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "144a743d0a5c124f9dd374bdc1ecc9eb5d433401",
+      "title": "Keep the caret in dialog text fields on Flutter 3.44 desktop builds (#17146)",
+      "files": [
+        ".github/patches/apply_flutter_3.44_source_patches.sh",
+        ".github/patches/apply_flutter_3.44_web_patches.sh",
+        "flutter/test/dialog_text_field_focus_test.dart"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "eedf39e3cb1a4007374f134ff6fd5ec007bcb6b7",
+      "title": "docs: fix broken nightly and server-demo links in VN/DA READMEs (#17150)",
+      "files": [
+        "docs/README-DA.md",
+        "docs/README-VN.md"
+      ],
+      "submodule_changes": []
+    }
+  ],
+  "submodule_paths_touched": [],
+  "patches": [
+    {
+      "source_commit": "c50ae975128e3061ee5c209f4eb8fb4a2605380f",
+      "file": "upstream-review/2026-11-21/omit-preset-address-book-password.patch",
+      "applies_to_main": true,
+      "diagnostic": ""
+    },
+    {
+      "source_commit": "dcb6291116158c7cbd9cb40b5a5c5f7986468904",
+      "file": "upstream-review/2026-11-21/windows-format-response-validation.patch",
+      "applies_to_main": true,
+      "diagnostic": ""
+    }
+  ],
+  "runtime_source_changed": false,
+  "tests_executed": false,
+  "workflow_dispatched": false,
+  "release_created": false,
+  "baseline_advanced": false,
+  "production_changed": false,
+  "follow_up_review": "../2026-11-22/review.json"
+}

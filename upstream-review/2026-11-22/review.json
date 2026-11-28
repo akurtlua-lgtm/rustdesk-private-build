@@ -1,0 +1,77 @@
+{
+  "checked_at": "2026-11-22",
+  "previous_observed": "eedf39e3cb1a4007374f134ff6fd5ec007bcb6b7",
+  "observed_head": "8e1433d4a24852302700c4dd54e8b901f350077c",
+  "new_commits": [
+    {
+      "sha": "e0f1154f74d1943288618f8f90eb9fc53b28dc72",
+      "title": "docs: use https for DCO links and fix the NL self-host server URL (#17152)",
+      "files": [
+        "docs/CONTRIBUTING-FR.md",
+        "docs/CONTRIBUTING-ID.md",
+        "docs/CONTRIBUTING-IT.md",
+        "docs/CONTRIBUTING-JP.md",
+        "docs/CONTRIBUTING-KR.md",
+        "docs/CONTRIBUTING-NL.md",
+        "docs/CONTRIBUTING-NO.md",
+        "docs/CONTRIBUTING-PL.md",
+        "docs/CONTRIBUTING-RO.md",
+        "docs/CONTRIBUTING-RU.md",
+        "docs/CONTRIBUTING-TR.md",
+        "docs/CONTRIBUTING-ZH.md",
+        "docs/CONTRIBUTING.md",
+        "docs/README-NL.md"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "817ba32b25c4930cd0b8ca7a89aa59b9d4cc94e2",
+      "title": "Fix/macos update dmg eject (#16921)",
+      "files": [
+        "src/platform/macos.rs",
+        "src/platform/macos/verified_dmg.rs",
+        "src/platform/macos/verified_dmg_tests.rs",
+        "src/platform/privileges_scripts/update.scpt"
+      ],
+      "submodule_changes": []
+    },
+    {
+      "sha": "8e1433d4a24852302700c4dd54e8b901f350077c",
+      "title": "Fix/cm chat remote input (#17119)",
+      "files": [
+        "flutter/lib/common/widgets/chat_page.dart",
+        "flutter/lib/models/chat_model.dart",
+        "src/server/connection.rs",
+        "src/server/input_service.rs"
+      ],
+      "submodule_changes": []
+    }
+  ],
+  "total_new_since_target_last_seen": 15,
+  "base_main": "5479b701e2b3ff3c1485a6a641373e8f7abfb3bd",
+  "stable_release": "v1.5.14",
+  "version": "1.5.14+82",
+  "upstream_stable": "1.5.3",
+  "integrated_commit": "d46c7c52521a311d3ada8eeacd4f13b94e321258",
+  "patches": [
+    {
+      "source_commit": "817ba32b25c4930cd0b8ca7a89aa59b9d4cc94e2",
+      "file": "upstream-review/2026-11-22/macos-verified-dmg-eject.patch",
+      "applies_to_main": true,
+      "diagnostic": ""
+    },
+    {
+      "source_commit": "8e1433d4a24852302700c4dd54e8b901f350077c",
+      "file": "upstream-review/2026-11-22/cm-chat-remote-input.patch",
+      "applies_to_main": true,
+      "diagnostic": ""
+    }
+  ],
+  "submodule_paths_touched": [],
+  "runtime_source_changed": false,
+  "native_or_widget_tests_executed": false,
+  "workflow_dispatched": false,
+  "release_created": false,
+  "baseline_advanced": false,
+  "production_changed": false
+}
