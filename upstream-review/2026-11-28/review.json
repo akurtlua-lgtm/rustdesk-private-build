@@ -1,0 +1,65 @@
+{
+  "checked_at": "2026-11-28",
+  "base_main": "5479b701e2b3ff3c1485a6a641373e8f7abfb3bd",
+  "previous_observed": "45e34a69239c2c2467fd02af8ee97263ff26ef23",
+  "observed_head": "104ef2a86505ba4988dd7dca040aa92de49ab139",
+  "total_new_since_target_last_seen": 32,
+  "new_commits": [
+    {
+      "sha": "5c680b4d86c994a9de8a598c9afc7e5d3d5061bd",
+      "parents": [
+        "45e34a69239c2c2467fd02af8ee97263ff26ef23"
+      ],
+      "title": "Make the idle API heartbeat interval configurable (#17256)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/5c680b4d86c994a9de8a598c9afc7e5d3d5061bd",
+      "files": [
+        "libs/base/src/config/keys.rs",
+        "src/hbbs_http/sync.rs"
+      ],
+      "patch": "upstream-review/2026-11-28/idle-api-heartbeat.patch",
+      "source_hunks_unchanged": true,
+      "patch_sha256": "f19946561568dcf0db9e0e22c42e86153aaccc5ee2baa2f42e1d097fd3539a04",
+      "applies_to_main_runtime_tree": true,
+      "apply_check_diagnostic": ""
+    },
+    {
+      "sha": "104ef2a86505ba4988dd7dca040aa92de49ab139",
+      "parents": [
+        "5c680b4d86c994a9de8a598c9afc7e5d3d5061bd"
+      ],
+      "title": "fix(fs): compare modified time in whole seconds in write confirmation (#17290)",
+      "url": "https://github.com/rustdesk/rustdesk/commit/104ef2a86505ba4988dd7dca040aa92de49ab139",
+      "files": [
+        "libs/base/src/fs.rs"
+      ],
+      "patch": "upstream-review/2026-11-28/write-confirmation-seconds.patch",
+      "source_hunks_unchanged": true,
+      "patch_sha256": "ddccb0e3985598001d158ac4f74085b5885b082b05d4a68003a3bd18e6d488ee",
+      "applies_to_main_runtime_tree": false,
+      "apply_check_diagnostic": "error: patch failed: libs/base/src/fs.rs:1918\nerror: libs/base/src/fs.rs: patch does not apply"
+    }
+  ],
+  "submodule_changes": [],
+  "dependency_changes": [],
+  "stable_release": "v1.5.14",
+  "version": "1.5.14+82",
+  "upstream_stable": "1.5.3",
+  "integrated_commit": "d46c7c52521a311d3ada8eeacd4f13b94e321258",
+  "pending_scopes_in_main": 26,
+  "runtime_source_changed": false,
+  "patches_applied": false,
+  "native_tests_executed": false,
+  "workflow_dispatched": false,
+  "release_created": false,
+  "baseline_advanced": false,
+  "production_changed": false,
+  "decision": "hold stable; exact patches prepared as data for review, native and API compatibility not approved",
+  "adapted_patch": {
+    "file": "upstream-review/2026-11-28/write-confirmation-seconds-adapted.patch",
+    "applies_to_main_runtime_tree": true,
+    "production_change_matches_upstream": true,
+    "added_test_lines_match_upstream": true,
+    "reason": "Original test hunk expects a deferred compressed-extension test after the insertion point; append the unchanged new test at the existing module end instead, without importing that unrelated scope",
+    "sha256": "d5fc0c1ed48f9858df657c28a081891b14135ba1158d662ad0582749b4d78e29"
+  }
+}

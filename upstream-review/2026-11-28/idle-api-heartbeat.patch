@@ -1,0 +1,120 @@
+diff --git a/libs/base/src/config/keys.rs b/libs/base/src/config/keys.rs
+--- a/libs/base/src/config/keys.rs
++++ b/libs/base/src/config/keys.rs
+@@ -75,6 +75,7 @@ pub const OPTION_VERIFICATION_METHOD: &str = "verification-method";
+ pub const OPTION_TEMPORARY_PASSWORD_LENGTH: &str = "temporary-password-length";
+ pub const OPTION_CUSTOM_RENDEZVOUS_SERVER: &str = "custom-rendezvous-server";
+ pub const OPTION_API_SERVER: &str = "api-server";
++pub const OPTION_API_IDLE_HEARTBEAT_INTERVAL_SECONDS: &str = "api-idle-heartbeat-interval-seconds";
+ pub const OPTION_KEY: &str = "key";
+ pub const OPTION_PRESET_ADDRESS_BOOK_NAME: &str = "preset-address-book-name";
+ pub const OPTION_PRESET_ADDRESS_BOOK_TAG: &str = "preset-address-book-tag";
+@@ -313,6 +314,7 @@ pub const KEYS_SETTINGS: &[&str] = &[
+     OPTION_PROXY_PASSWORD,
+     OPTION_CUSTOM_RENDEZVOUS_SERVER,
+     OPTION_API_SERVER,
++    OPTION_API_IDLE_HEARTBEAT_INTERVAL_SECONDS,
+     OPTION_KEY,
+     OPTION_ALLOW_WEBSOCKET,
+     OPTION_WEBSOCKET_PORT,
+diff --git a/src/hbbs_http/sync.rs b/src/hbbs_http/sync.rs
+--- a/src/hbbs_http/sync.rs
++++ b/src/hbbs_http/sync.rs
+@@ -15,10 +15,25 @@ use base::config::keys;
+ use serde::{Deserialize, Serialize};
+ use serde_json::{json, Value};
+ 
+-const TIME_HEARTBEAT: Duration = Duration::from_secs(15);
+ const UPLOAD_SYSINFO_TIMEOUT: Duration = Duration::from_secs(120);
+ const TIME_CONN: Duration = Duration::from_secs(3);
+ 
++#[cfg(any(not(target_os = "ios"), test))]
++fn idle_heartbeat_interval() -> Duration {
++    const MIN_SECS: u64 = 15;
++    const MAX_SECS: u64 = 300;
++    let value = Config::get_option(keys::OPTION_API_IDLE_HEARTBEAT_INTERVAL_SECONDS);
++    let seconds = value.trim().parse::<u64>().unwrap_or(MIN_SECS);
++    Duration::from_secs(seconds.clamp(MIN_SECS, MAX_SECS))
++}
++
++#[cfg(any(not(target_os = "ios"), test))]
++fn idle_heartbeat_due(url: &str, last_sent: Option<&(String, Instant)>) -> bool {
++    last_sent.map_or(true, |(last_url, at)| {
++        last_url != url || at.elapsed() >= idle_heartbeat_interval()
++    })
++}
++
+ #[cfg(not(any(target_os = "ios")))]
+ lazy_static::lazy_static! {
+     static ref SENDER : Mutex<broadcast::Sender<Vec<i32>>> = Mutex::new(start_hbbs_sync());
+@@ -89,7 +104,7 @@ async fn start_hbbs_sync_async() {
+         Instant::now() + TIME_CONN,
+         TIME_CONN,
+     ));
+-    let mut last_sent: Option<Instant> = None;
++    let mut last_sent = None;
+     let mut info_uploaded = InfoUploaded::default();
+     let mut sysinfo_ver = "".to_owned();
+     loop {
+@@ -225,10 +240,10 @@ async fn start_hbbs_sync_async() {
+                         }
+                     }
+                 }
+-                if conns.is_empty() && last_sent.map(|x| x.elapsed() < TIME_HEARTBEAT).unwrap_or(false) {
++                if conns.is_empty() && !idle_heartbeat_due(&url, last_sent.as_ref()) {
+                     continue;
+                 }
+-                last_sent = Some(Instant::now());
++                last_sent = Some((url.clone(), Instant::now()));
+                 let mut v = Value::default();
+                 v["id"] = json!(id);
+                 v["uuid"] = json!(crate::encode64(hbb_common::get_uuid()));
+@@ -238,7 +253,7 @@ async fn start_hbbs_sync_async() {
+                 }
+                 let modified_at = LocalConfig::get_option("strategy_timestamp").parse::<i64>().unwrap_or(0);
+                 v["modified_at"] = json!(modified_at);
+-                let response = crate::post_request(url.clone(), v.to_string(), "").await;
++                let response = crate::post_request(url, v.to_string(), "").await;
+                 if let Err(err) = &response {
+                     hbb_common::throttled_log!(API_LOG_INTERVAL, warn, "Heartbeat failed: {err:?}");
+                 }
+@@ -524,6 +539,39 @@ mod tests {
+     }
+ }
+ 
++#[cfg(test)]
++mod heartbeat_tests {
++    use super::{
++        config::OVERWRITE_SETTINGS, idle_heartbeat_due, idle_heartbeat_interval, keys, Instant,
++    };
++
++    #[tokio::test(start_paused = true)]
++    async fn switching_api_bypasses_the_idle_interval() {
++        let url = "https://a.example/api/heartbeat";
++        let last_sent = (url.to_owned(), Instant::now());
++        tokio::time::advance(super::TIME_CONN).await;
++        assert!(!idle_heartbeat_due(url, Some(&last_sent)));
++        assert!(idle_heartbeat_due(
++            "https://b.example/api/heartbeat",
++            Some(&last_sent)
++        ));
++    }
++
++    #[test]
++    fn configured_idle_heartbeat_interval() {
++        let key = keys::OPTION_API_IDLE_HEARTBEAT_INTERVAL_SECONDS;
++        let actual = ["", "invalid", "10", "60", "600"].map(|value| {
++            OVERWRITE_SETTINGS
++                .write()
++                .unwrap()
++                .insert(key.into(), value.into());
++            idle_heartbeat_interval().as_secs()
++        });
++        OVERWRITE_SETTINGS.write().unwrap().remove(key);
++        assert_eq!(actual, [15, 15, 15, 60, 300]);
++    }
++}
++
+ #[cfg(test)]
+ mod strategy_tests {
+     use super::{filter_config_options, HashMap};
